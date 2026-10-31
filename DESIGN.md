@@ -175,17 +175,22 @@ The suggested default follows each question:
    *Default: in the seam (questions 2, 4 and 5).* The migration column holds the one-off cost
    of getting there (beans, transactions, handlers), not the ongoing cost of the shape.
 
-The proposal reads like the study's (`SPLIT-TOOL.md`, *Under function injection*):
+The proposal follows the study's format (`SPLIT-TOOL.md`, *Under function injection*), except
+that the study's version still ended with a remainder, because it was the framework reading of
+the conventional search. Here there is no remainder: every line of the method belongs to a
+function. For a 61-line method:
 
 ```
-function 48-71   24 lines   declares: request, config   produces: session   static   saves 23
-function 73-90   18 lines   declares: session           produces: -         static   saves 17
-remainder        19 lines   declares: request, config, session               was 61
+function 30-47   18 lines   declares: request, config    produces: query     seam 0
+function 48-71   24 lines   declares: query*, config     produces: session   seam 1
+function 73-90   18 lines   declares: session*, request  produces: -         seam 1
+3 functions, 2 edges        worst seam 1                 cost (0+1) + (1+1) + (1+1) + 2 = 7
 ```
 
-*declares* is what a function asks the framework for: the method's own parameters passed
-through, and the values earlier functions produced. *produces* is what it hands on. The order
-of the functions is part of the proposal.
+*declares* is what a function asks the framework for. A value marked `*` was computed by an
+earlier function and costs 1 here; everything else comes from outside the method, is injected,
+and is free. *produces* is what it hands on. The order of the functions, and the edges between
+them, are part of the proposal.
 
 The split produces the functions as code **and** their wiring (the YAML, woof or procedure
 configuration), applied as a refactoring in the IDE and checked by reading the facts again and

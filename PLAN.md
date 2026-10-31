@@ -40,7 +40,9 @@ SinewSlim's `main` (`build.gradle.kts`, `settings.gradle.kts`, the three modules
 
 ## Phase 1: restructure the SinewSlim libraries (in SinewSlim)
 
-Before anything goes to Central, because a Central release cannot be deleted.
+Before anything goes to Central, because a Central release cannot be deleted. Build on
+SinewSlim's `central-libraries` branch, which holds the Phase 0 publishing setup; `main` does
+not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 
 - [ ] Rename the Gradle projects to their artifact names (`sinewslim-core`, …), so composite builds substitute them automatically
 - [ ] Move `MethodFacts`, `Stmt`, `StmtKind`, `Var`, `Jumps`, `MethodIndex`, `Seam` into `sinewslim-facts`; `sinewslim-core` depends on it
@@ -104,7 +106,8 @@ Runs alongside Phase 3. The experiment is running on another machine (about two 
 commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical studies*.
 
 - [x] Confirm how the experiment produces its Spring and OfficeFloor variants: the same 250-checkpoint stream, agent and specs on paired base repositories `~/officehq-<frontend>-spring` and `-officefloor`
-- [ ] Write the analysis plan (H1–H4, measures, normalisation, the go/no-go bar) into the experiment's repository and commit it, **before** SinewSlim reads any branch of the current runs
+- [x] Draft the analysis plan (H1–H4, measures, normalisation, the go/no-go bar): `~/ui-long-degradation-test/docs/SINEWSLIM_ANALYSIS_PLAN.md`
+- [ ] Fill in its run IDs and SinewSlim commit, add `docs/sinewslim-analysis.yml`, and commit it, **before** SinewSlim reads any branch of the current runs
 - [ ] A scan driver: for each `evolve/<run>/<condition>/chain<N>` branch, run SinewSlim at every checkpoint commit, backend Java only, and write one JSON per commit
 - [ ] Pilot the driver on an old run (for example `officehq-angular-spring`, `evolve/202610112340/just-solve/chain1`), not on the current runs
 - [ ] Check SinewSlim's code lines against Lizard's NLOC on the pilot, so the harness's series can be read beside the new one
