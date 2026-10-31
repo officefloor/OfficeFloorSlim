@@ -138,13 +138,13 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 
 - [x] Settle cost model questions 1–3 (carried values per declaring function; function and edge 1 each; everything from outside the method free)
 - [x] Settle cost model questions 4–7 (decision functions, escalations, selection order, where the wiring counts) before any comparison, starting from the suggested defaults (1 November 2026; the defaults, with the join and the new-handler rule made explicit, and the wiring in the total as the worked example has it)
-- [ ] The graph-partition search (`DESIGN.md`, *The OfficeFloor split*)
-- [ ] A `return` ends a function as a `@Next` or flow; a `throw` becomes an escalation
-- [ ] An `if` or `switch` can become a decision function whose branches are flows
-- [ ] Loops, `break` and `continue` still block a split
-- [ ] Its own not-slimmable reasons (loops, carried values)
-- [ ] Tests from hand-written fact sets and fixture sources, as SinewSlim's
-- [ ] Re-run the study's scan with the real OfficeFloor column in place of the framework reading
+- [x] The graph-partition search (`DESIGN.md`, *The OfficeFloor split*): `OfficeFloorSplit`, `officefloorslim-split/1`, a dynamic program over each statement sequence (runs of whole statements, or one long compound statement expanded), the plan chosen by worst seam, then functions, then total
+- [x] A `return` ends a function as a `@Next` or flow; a `throw` becomes an escalation (a return before a function's end is one flow, to the end; an escalation costs only where a try is cut, question 5)
+- [x] An `if` or `switch` can become a decision function whose branches are flows (a switch whose cases fall through is not cut; its default and arrow form are read with the shape)
+- [x] Loops, `break` and `continue` still block a split (so do `synchronized` and labeled statements, a try with resources or a finally, and a lambda's body, which runs inside its call)
+- [x] Its own not-slimmable reasons (loops, carried values): loop, long statement, try, switch, carried, jumps, with the blocking statement. The carried-value limit is 5 per function, as SinewSlim's parameter limit (not one of questions 1 to 7: to confirm)
+- [x] Tests from hand-written fact sets and fixture sources, as SinewSlim's: `OfficeFloorSplitTest`, 12 cases worked out by hand against the cost model
+- [ ] Re-run the study's scan with the real OfficeFloor column in place of the framework reading: the scan's column is the split now (`officefloorslim-scan/2`); the study's runs are still to come. Read so far (1 November 2026): on OfficeFloor itself category 3 falls from 12 to 8 (6.7% of 119), and on the pilot chain at cp250 from 3 to 0. Loops are the commonest block (82 of the 164 long methods with no plan on OfficeFloor), then long single statements: on the pilot, `recordPayment` is one 130-line `found.ifPresent(invoice -> {...})`, a lambda the split does not cut (SinewSlim extracts inside lambdas)
 - [ ] In the plugin: long functions highlighted on the graphs, the split previewed as new functions and flows, first on code that already uses OfficeFloor
 - [ ] In SinewSlim: remove `Params.framework()` and the `framework:` configuration
 

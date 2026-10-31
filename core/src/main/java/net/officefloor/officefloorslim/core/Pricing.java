@@ -8,7 +8,6 @@ import net.officefloor.sinewslim.core.Assessment;
 import net.officefloor.sinewslim.core.Assessment.Status;
 import net.officefloor.sinewslim.core.Assessor;
 import net.officefloor.sinewslim.core.Params;
-import net.officefloor.sinewslim.core.SlimResult;
 import net.officefloor.sinewslim.core.Slimmer;
 import net.officefloor.sinewslim.facts.MethodFacts;
 import net.officefloor.sinewslim.facts.Var;
@@ -19,25 +18,23 @@ import net.officefloor.sinewslim.facts.Var;
  * cost.
  *
  * <p>
- * Until OfficeFloorSlim's own split exists (PLAN.md, Phase 4) the OfficeFloor column is
- * SinewSlim's framework reading ({@link Params#framework()}): pass-through parameters injected
- * for nothing, each further result a declared value. It is labelled {@link #OFFICEFLOOR_READING}
- * wherever it is shown.
+ * The OfficeFloor column is OfficeFloorSlim's own split ({@link OfficeFloorSplit}), labelled
+ * {@link #OFFICEFLOOR_READING}. Until Phase 4 it was SinewSlim's framework reading, which counted
+ * only the parameters and returns of the conventional search's pieces, and kept a remainder.
  *
  * @param conventional SinewSlim's assessment under its defaults
- * @param officefloor  the OfficeFloor column's assessment
+ * @param officefloor  the OfficeFloor split's plan
  * @param category     the category, for a method SinewSlim cannot slim with one return per
  *                     piece; null otherwise
  * @param migration    what moving it to OfficeFloor would take
  */
-public record Pricing(Assessment conventional, Assessment officefloor, Category category, Migration migration) {
+public record Pricing(Assessment conventional, OfficeFloorSplit.Plan officefloor, Category category,
+		Migration migration) {
 
-	/** What the OfficeFloor column is, until Phase 4. */
-	public static final String OFFICEFLOOR_READING = "sinewslim-framework-reading";
+	/** What the OfficeFloor column is: OfficeFloorSlim's own split (Phase 4), version 1. */
+	public static final String OFFICEFLOOR_READING = "officefloorslim-split/1";
 
 	static final Assessor CONVENTIONAL = Assessor.DEFAULTS;
-
-	static final Assessor OFFICEFLOOR = new Assessor(Params.DEFAULTS.framework(), true, true, 1);
 
 	/** SinewSlim's defaults with the jump rule lifted: the guard clauses inverted, as a restructure would. */
 	static final Params RESTRUCTURED = Params.DEFAULTS.toBuilder().ignoreJumps(true).build();
@@ -75,9 +72,9 @@ public record Pricing(Assessment conventional, Assessment officefloor, Category 
 	 * @param transactional whether it, or its class, is {@code @Transactional}: a transaction
 	 *                      boundary to keep
 	 * @param escalations   the exception types it declares or catches: each becomes an escalation
-	 * @param functions     the functions the OfficeFloor column's split gives (its pieces and the
-	 *                      remainder); -1 when it has none
-	 * @param edges         the flows between them; -1 when it has none
+	 * @param functions     the functions the OfficeFloor split's plan has (every line in one); -1
+	 *                      when it has no plan
+	 * @param edges         the flows between them, escalations included; -1 when it has no plan
 	 */
 	public record Migration(int fields, boolean transactional, int escalations, int functions, int edges) {
 	}
@@ -89,9 +86,9 @@ public record Pricing(Assessment conventional, Assessment officefloor, Category 
 
 	public static Pricing of(MethodFacts facts, MethodShape shape) {
 		Assessment conventional = CONVENTIONAL.assess(facts);
-		Assessment officefloor = OFFICEFLOOR.assess(facts);
+		OfficeFloorSplit.Plan officefloor = OfficeFloorSplit.plan(facts, shape);
 		Category category = category(conventional.status(), () -> Slimmer.slim(facts, RESTRUCTURED).feasible(),
-				officefloor.proposal().feasible());
+				officefloor.feasible());
 		return new Pricing(conventional, officefloor, category, migration(facts, shape, officefloor));
 	}
 
@@ -102,7 +99,7 @@ public record Pricing(Assessment conventional, Assessment officefloor, Category 
 	 * @param conventional  SinewSlim's status
 	 * @param restructured  whether SinewSlim's defaults slim it with the jump rule lifted (asked
 	 *                      only when needed)
-	 * @param officefloor   whether the OfficeFloor column slims it
+	 * @param officefloor   whether the OfficeFloor split has a plan
 	 */
 	static Category category(Status conventional, BooleanSupplier restructured, boolean officefloor) {
 		if (conventional == Status.SLIMMABLE_WITH_RECORD) {
@@ -117,7 +114,7 @@ public record Pricing(Assessment conventional, Assessment officefloor, Category 
 		return officefloor ? Category.FUNCTION_INJECTION : Category.REDESIGN;
 	}
 
-	static Migration migration(MethodFacts facts, MethodShape shape, Assessment officefloor) {
+	static Migration migration(MethodFacts facts, MethodShape shape, OfficeFloorSplit.Plan officefloor) {
 		int fields = 0;
 		for (Var v : facts.vars()) {
 			if (v.kind() == Var.Kind.FIELD) {
@@ -127,9 +124,8 @@ public record Pricing(Assessment conventional, Assessment officefloor, Category 
 		Set<String> exceptions = new LinkedHashSet<>();
 		exceptions.addAll(shape.declared());
 		exceptions.addAll(shape.caught());
-		SlimResult split = officefloor.proposal();
-		boolean has = split.applicable() && split.feasible();
-		return new Migration(fields, shape.annotated("Transactional"), exceptions.size(), has ? split.pieces() + 1 : -1,
-				has ? split.pieces() : -1);
+		boolean has = officefloor.applicable() && officefloor.feasible();
+		return new Migration(fields, shape.annotated("Transactional"), exceptions.size(),
+				has ? officefloor.functions().size() : -1, has ? officefloor.edges() : -1);
 	}
 }

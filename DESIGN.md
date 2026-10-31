@@ -135,8 +135,8 @@ method body, and every report says which reading is in force for each method.
 
 ## The OfficeFloor split
 
-This is the algorithm to design and test in Phase 4 of `PLAN.md`. What follows is its
-starting shape, not a settled specification.
+Built in Phase 4 of `PLAN.md` as `OfficeFloorSplit` (`officefloorslim-split/1`), the scan's
+OfficeFloor column. Its shape, as built:
 
 - **Input:** the same facts SinewSlim reads, plus the OfficeFloor-specific ones (annotations,
   try/catch, declared exceptions, the wiring the method already has).
@@ -149,7 +149,11 @@ starting shape, not a settled specification.
   escalation. `break` and `continue` crossing a cut still block it.
 - **Branches:** an `if` or `switch` may become a decision function whose branches are flows.
 - **Not slimmable:** its own reasons, chiefly loops and the values carried across edges,
-  instead of SinewSlim's jumps.
+  instead of SinewSlim's jumps: a loop or a single statement longer than the target, a try
+  with resources or a finally, a switch whose cases fall through, more than 5 carried values in
+  every plan (SinewSlim's parameter limit, mirrored), or a jump crossing every cut. Loops,
+  `synchronized` and labeled statements and a lambda's body are never cut: a lambda runs inside
+  its call, not in a sequence OfficeFloor wires.
 
 **The cost model** (all seven questions decided before any OfficeFloor figure was compared
 with a SinewSlim one, so the weights were not tuned after seeing which way they go: questions 1

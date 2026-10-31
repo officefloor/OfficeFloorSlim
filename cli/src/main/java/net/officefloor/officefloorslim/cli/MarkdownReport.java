@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 
 import net.officefloor.officefloorslim.core.Classification.Reading;
+import net.officefloor.officefloorslim.core.OfficeFloorSplit;
 import net.officefloor.officefloorslim.core.Pricing;
 import net.officefloor.officefloorslim.core.Pricing.Category;
 import net.officefloor.officefloorslim.core.RepositoryScan.Method;
@@ -28,7 +29,7 @@ final class MarkdownReport {
 		}
 		b.append(", officefloorslim ").append(version).append(", ").append(JsonReport.SCHEMA).append(".\n\n");
 		b.append("The OfficeFloor column is **").append(Pricing.OFFICEFLOOR_READING)
-				.append("** (SinewSlim's framework reading) until OfficeFloorSlim's own split exists.\n\n");
+				.append("**: functions and their flows, every line in one; the cost is the carried values, plus 1 per function and per flow.\n\n");
 
 		b.append("## Summary\n\n| | Methods |\n|---|---:|\n");
 		b.append("| Files read | ").append(r.files()).append(" |\n");
@@ -78,7 +79,7 @@ final class MarkdownReport {
 				b.append("| `").append(x.path()).append(":").append(x.line()).append("` ").append(cell(x.type()))
 						.append(".").append(cell(x.signature())).append(" | ").append(x.length()).append(" | ")
 						.append(name(x.classification().reading().name())).append(": ").append(cell(x.classification().evidence()))
-						.append(" | ").append(price(p.conventional())).append(" | ").append(price(p.officefloor()))
+						.append(" | ").append(price(p.conventional())).append(" | ").append(plan(p.officefloor()))
 						.append(" | ").append(mig.fields()).append(" fields").append(mig.transactional() ? ", transactional" : "")
 						.append(", ").append(mig.escalations()).append(" escalations")
 						.append(mig.functions() < 0 ? "" : ", " + mig.functions() + " functions, " + mig.edges() + " flows")
@@ -106,6 +107,14 @@ final class MarkdownReport {
 
 	static String plural(int n, String noun) {
 		return n + " " + noun + (n == 1 ? "" : "s");
+	}
+
+	static String plan(OfficeFloorSplit.Plan p) {
+		if (!p.feasible()) {
+			return "not splittable: " + name(p.reason().name()) + (p.detail() == null ? "" : ", " + p.detail());
+		}
+		return "cost " + p.total() + " (" + plural(p.functions().size(), "function") + ", " + plural(p.edges(), "flow")
+				+ ", worst seam " + p.worstSeam() + ")";
 	}
 
 	static String name(String constant) {

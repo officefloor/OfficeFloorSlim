@@ -9,8 +9,8 @@ graphs, and can migrate a method from Spring to OfficeFloor.
 Early. Built so far: the wiring to SinewSlim's libraries, the OfficeFloor IntelliJ plugin
 (`intellij/`), the graph model it shares with the classification (`graph/`), and a report-only
 scan that classifies every method and prices each long one both ways (`core/`, `cli/`). The
-OfficeFloor split itself is not built yet: until it is, the scan's OfficeFloor column is
-SinewSlim's framework reading, labelled as such. See [DESIGN.md](DESIGN.md) and
+scan's OfficeFloor column is OfficeFloorSlim's own split (`core/`, `OfficeFloorSplit`); the
+plugin does not show it yet, and nothing applies it. See [DESIGN.md](DESIGN.md) and
 [PLAN.md](PLAN.md).
 
 Build with `./gradlew build`. With [SinewSlim](https://github.com/officefloor/SinewSlim) checked

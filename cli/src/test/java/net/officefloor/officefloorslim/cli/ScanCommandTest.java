@@ -43,9 +43,9 @@ class ScanCommandTest {
 		Path out = root.resolve("scan.json");
 		assertEquals(0, run("scan", "--repo", root.toString(), "--out", out.toString()));
 		JsonNode j = new ObjectMapper().readTree(out.toFile());
-		assertEquals("officefloorslim-scan/1", j.get("schema").asText());
+		assertEquals("officefloorslim-scan/2", j.get("schema").asText());
 		assertEquals(3, j.get("facts_schema").asInt());
-		assertEquals("sinewslim-framework-reading", j.get("officefloor_reading").asText());
+		assertEquals("officefloorslim-split/1", j.get("officefloor_reading").asText());
 		assertEquals(1, j.get("methods_by_reading").get("officefloor_function").asInt());
 		assertEquals(1, j.get("wiring").get("files").asInt());
 		assertTrue(j.get("bar").has("go"));

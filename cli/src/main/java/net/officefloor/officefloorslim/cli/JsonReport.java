@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import net.officefloor.officefloorslim.core.Classification.Reading;
+import net.officefloor.officefloorslim.core.OfficeFloorSplit;
 import net.officefloor.officefloorslim.core.Pricing;
 import net.officefloor.officefloorslim.core.Pricing.Category;
 import net.officefloor.officefloorslim.core.Pricing.Migration;
@@ -88,7 +89,7 @@ final class JsonReport {
 			e.put("evidence", x.classification().evidence());
 			Pricing p = x.pricing();
 			assessment(e.putObject("sinewslim"), p.conventional());
-			assessment(e.putObject("officefloor"), p.officefloor());
+			plan(e.putObject("officefloor"), p.officefloor());
 			if (p.category() == null) {
 				e.putNull("category");
 			} else {
@@ -124,6 +125,28 @@ final class JsonReport {
 			o.put("cost", s.cost()).put("width", s.width()).put("pieces", s.pieces()).put("remainder", s.remainder());
 		} else {
 			o.putNull("cost");
+		}
+	}
+
+	/** The OfficeFloor split's plan: its functions and flows, or why there is none. */
+	static void plan(ObjectNode o, OfficeFloorSplit.Plan p) {
+		o.put("feasible", p.feasible());
+		if (!p.feasible()) {
+			o.put("reason", p.reason().name().toLowerCase());
+			if (p.detail() == null) {
+				o.putNull("detail");
+			} else {
+				o.put("detail", p.detail());
+			}
+			o.putNull("total");
+			return;
+		}
+		o.put("total", p.total()).put("worst_seam", p.worstSeam()).put("edges", p.edges());
+		ArrayNode fns = o.putArray("functions");
+		for (OfficeFloorSplit.Function f : p.functions()) {
+			ObjectNode fo = fns.addObject().put("kind", f.kind().name().toLowerCase()).put("lo", f.lo()).put("hi", f.hi())
+					.put("lines", f.lines());
+			f.declares().forEach(fo.putArray("declares")::add);
 		}
 	}
 

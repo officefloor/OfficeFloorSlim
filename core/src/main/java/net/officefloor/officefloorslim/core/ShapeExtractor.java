@@ -19,7 +19,10 @@ import com.github.javaparser.ast.expr.SimpleName;
 import com.github.javaparser.ast.stmt.CatchClause;
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt;
 import com.github.javaparser.ast.stmt.LocalRecordDeclarationStmt;
+import com.github.javaparser.ast.stmt.SwitchEntry;
+import com.github.javaparser.ast.stmt.SwitchStmt;
 import com.github.javaparser.ast.stmt.ThrowStmt;
+import com.github.javaparser.ast.stmt.TryStmt;
 
 import net.officefloor.officefloorslim.core.MethodShape.Param;
 import net.officefloor.sinewslim.facts.FactKey;
@@ -78,7 +81,8 @@ public final class ShapeExtractor implements Extractor<MethodShape> {
 		own(callable, caught, throwsStatements, true);
 
 		return new MethodShape(className(callable), methodAnnotations, typeAnnotations, params, returnType, declared,
-				caught, throwsStatements[0], isPublic, isStatic, codeLines(callable));
+				caught, throwsStatements[0], isPublic, isStatic, codeLines(callable), tries(callable),
+				switches(callable));
 	}
 
 	/**
@@ -117,6 +121,56 @@ public final class ShapeExtractor implements Extractor<MethodShape> {
 			} else {
 				nested(c, out);
 			}
+		}
+	}
+
+	/** The callable's own switch statements (a nested type's left out), in order. */
+	static List<MethodShape.Switch> switches(BodyDeclaration<?> callable) {
+		List<MethodShape.Switch> out = new ArrayList<>();
+		collectSwitches(callable, out, true);
+		return out;
+	}
+
+	private static void collectSwitches(Node n, List<MethodShape.Switch> out, boolean top) {
+		if (!top && (n instanceof TypeDeclaration
+				|| (n instanceof BodyDeclaration && n.getParentNode().orElse(null) instanceof ObjectCreationExpr))) {
+			return;
+		}
+		if (n instanceof SwitchStmt s && s.getRange().isPresent()) {
+			boolean hasDefault = s.getEntries().stream().anyMatch(SwitchEntry::isDefault);
+			boolean arrows = s.getEntries().stream().anyMatch(e -> e.getType() != SwitchEntry.Type.STATEMENT_GROUP);
+			out.add(new MethodShape.Switch(s.getRange().get().begin.line, s.getRange().get().end.line, hasDefault,
+					arrows));
+		}
+		for (Node c : n.getChildNodes()) {
+			collectSwitches(c, out, false);
+		}
+	}
+
+	/** The callable's own try statements (a nested type's left out), in order. */
+	static List<MethodShape.Try> tries(BodyDeclaration<?> callable) {
+		List<MethodShape.Try> out = new ArrayList<>();
+		collectTries(callable, out, true);
+		return out;
+	}
+
+	private static void collectTries(Node n, List<MethodShape.Try> out, boolean top) {
+		if (!top && (n instanceof TypeDeclaration
+				|| (n instanceof BodyDeclaration && n.getParentNode().orElse(null) instanceof ObjectCreationExpr))) {
+			return;
+		}
+		if (n instanceof TryStmt t && t.getRange().isPresent()) {
+			List<MethodShape.Catch> catches = new ArrayList<>();
+			for (CatchClause c : t.getCatchClauses()) {
+				var type = c.getParameter().getType();
+				catches.add(new MethodShape.Catch(type.isUnionType() ? type.asUnionType().getElements().size() : 1,
+						c.getParameter().getNameAsString()));
+			}
+			out.add(new MethodShape.Try(t.getRange().get().begin.line, t.getRange().get().end.line,
+					!t.getResources().isEmpty(), t.getFinallyBlock().isPresent(), catches));
+		}
+		for (Node c : n.getChildNodes()) {
+			collectTries(c, out, false);
 		}
 	}
 

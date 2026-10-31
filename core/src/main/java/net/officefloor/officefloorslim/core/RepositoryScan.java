@@ -34,7 +34,7 @@ import net.officefloor.sinewslim.scan.Scanner.Unreadable;
 public final class RepositoryScan {
 
 	/** The version of what a scan reports; a report's readers check it. */
-	public static final int SCHEMA = 1;
+	public static final int SCHEMA = 2;
 
 	/** Backend Java and the OfficeFloor configuration beside it; tests and build output left out. */
 	public static final List<String> DEFAULT_INCLUDE = List.of("**/*.java", "**/*.yml", "**/*.yaml", "**/*.woof",
