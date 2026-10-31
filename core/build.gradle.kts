@@ -7,6 +7,8 @@ val sinewslimVersion = rootProject.property("sinewslimVersion") as String
 dependencies {
     api("$sinewslim:sinewslim-facts:$sinewslimVersion")
     api("$sinewslim:sinewslim-core:$sinewslimVersion")
-    implementation("$sinewslim:sinewslim-javaparser:$sinewslimVersion")
+    // api: the extractors here are JavaParser extractors
+    api("$sinewslim:sinewslim-javaparser:$sinewslimVersion")
     implementation("$sinewslim:sinewslim-scan:$sinewslimVersion")
+    implementation(project(":officefloorslim-graph"))
 }

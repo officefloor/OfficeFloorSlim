@@ -13,6 +13,7 @@ if (sinewSlim.isDirectory) {
 val modules = mapOf(
     "officefloorslim-core" to "core",
     "officefloorslim-graph" to "graph",
+    "officefloorslim-cli" to "cli",
 )
 for ((name, dir) in modules) {
     include(name)

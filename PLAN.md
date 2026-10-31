@@ -85,14 +85,14 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 A report-only scan that prices every long method both ways. Until Phase 4 exists, the
 OfficeFloor column is SinewSlim's framework reading (`Params.framework()`), labelled as such.
 
-- [ ] Classification: OfficeFloor function, framework entry point, conventional (`DESIGN.md`, *Classification*)
-- [ ] Extend the facts with annotations, try/catch and declared exceptions through the Phase 1 extension point
-- [ ] Read `application.officefloor`, `.woof`, procedure YAML and Spring configuration
-- [ ] Per method over 26 lines: SinewSlim status and cost, the OfficeFloor column, migration cost, growth, category
-- [ ] Wiring measures per commit: YAML lines, functions, edges, and how often a change touches them
-- [ ] Versioned JSON output, plus HTML or Markdown
-- [ ] Run on `~/OfficeFloor` and read the category 3 list by hand
-- [ ] Go/no-go for Phases 4–6, by the bar below
+- [x] Classification: OfficeFloor function, framework entry point, conventional (`DESIGN.md`, *Classification*): `Classification` in `officefloorslim-core`
+- [x] Extend the facts with annotations, try/catch and declared exceptions through the Phase 1 extension point: `ShapeExtractor` (also the binary class name, the parameters and the code lines)
+- [x] Read `application.officefloor`, `.woof`, procedure YAML and Spring configuration: `WiringFile`; Spring's configuration is Java annotations, read with the shape
+- [x] Per method over 26 lines: SinewSlim status and cost, the OfficeFloor column, migration cost, growth, category (`Pricing`, `Growth`: blame at `HEAD` over the window, on SinewSlim's code lines)
+- [x] Wiring measures per commit: YAML lines, functions, edges, and how often a change touches them (at the commit scanned, and the window's commits that touched it; a series is the scan run at each commit, as the study's driver does)
+- [x] Versioned JSON output, plus HTML or Markdown: `officefloorslim scan --format json|markdown`, schema `officefloorslim-scan/1`
+- [x] Run on `~/OfficeFloor` and read the category 3 list by hand (88e86fca97, 1 November 2026; 7 s): 11,462 methods, 446 long, 119 not slimmable: category 1 74, 2 6, **3 12**, 4 27. Category 3 is 10.1% of them, under the bar's quarter, but this is a reading, not the decision. All 12 are conventional code, mostly section and office sources threading a designer and a context through every step; read by hand, `loadKeysForCoverage` (seven parameters, used inside a lambda) earns its category, since only its computed values would cost once its parameters are injected. Most stuck methods (74) are conventionally fixable once restructured.
+- [ ] Go/no-go for Phases 4–6, by the bar below: waits on the study's Spring arms (the experiment is still running); OfficeFloor's own scan decides only if they have too few long methods
 
 **The go/no-go bar (fixed now, before any scan).** Category 3 means not slimmable
 conventionally but slimmable under the OfficeFloor reading. Go if both hold, pooled over every
