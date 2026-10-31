@@ -151,9 +151,10 @@ starting shape, not a settled specification.
 - **Not slimmable:** its own reasons, chiefly loops and the values carried across edges,
   instead of SinewSlim's jumps.
 
-**What the cost model still has to settle** (Phase 4, before any OfficeFloor figure is
-compared with a SinewSlim one, so the weights are not tuned after seeing which way they go).
-The suggested default follows each question:
+**The cost model** (all seven questions decided before any OfficeFloor figure was compared
+with a SinewSlim one, so the weights were not tuned after seeing which way they go: questions 1
+to 3 on 31 October 2026, 4 to 7 on 1 November 2026, when the only OfficeFloor column yet was
+SinewSlim's framework reading):
 
 1. **A value used by several later functions (decided):** it costs **once per function that
    declares it**, because each declaration is something a reader has to follow. This is the
@@ -166,18 +167,25 @@ The suggested default follows each question:
    free**: its parameters, managed objects, and any value that reaches it already made. A
    value computed *inside* the method and handed from one of its new functions to a later one
    is the only data that costs, at 1 per declaring function (question 1).
-4. **A decision function:** what does turning an `if` or `switch` into flows cost? *Default:
-   one function for the decision plus one edge per branch*, so a five-way `switch` is visibly
-   dearer than a two-way `if`.
-5. **An escalation:** is a `throw` that becomes an escalation free, or does it cost an edge to
-   its handler? *Default: one edge, unless an existing handler already covers that exception
-   type.*
-6. **The selection order:** the same as SinewSlim's (the smallest worst seam, then the fewest
-   pieces, then the smallest total)? *Default: yes*, so the two columns pick their plans by the
-   same rule.
-7. **Where the wiring is counted:** in the seam, or only in the migration-cost column?
-   *Default: in the seam (questions 2, 4 and 5).* The migration column holds the one-off cost
-   of getting there (beans, transactions, handlers), not the ongoing cost of the shape.
+4. **A decision function (decided):** turning an `if` or `switch` into flows costs **1 for
+   the decision function and 1 edge per branch**, so a five-way `switch` is visibly dearer than
+   a two-way `if`. Where the branches meet again, the edges into the join are ordinary edges at
+   1 each (question 2). An `if`/`else` followed by more code is the decision (1), two branch
+   edges (2), the two branch functions (2), two join edges (2) and the join function (1).
+5. **An escalation (decided):** it costs **only when the split creates a handler.** A `catch`
+   whose `try` is cut across functions becomes a handler function (1) and one escalation edge
+   (1) per exception type it catches. A `throw` that already left the method, or that a handler
+   outside the method already covers, stays free: SinewSlim charges nothing for a throw, and
+   what is outside the method is free (question 3).
+6. **The selection order (decided):** **the same as SinewSlim's**: the smallest worst seam,
+   then the fewest functions, then the smallest total. The two columns pick their plans by the
+   same rule, so a difference between them is the model's, not the chooser's.
+7. **Where the wiring is counted (decided):** **in the total, not in the seam.** A function's
+   seam is the carried values it declares (question 1), so the worst seam measures data
+   carried, as SinewSlim's measures what crosses. The total is the seams, plus 1 per function,
+   plus 1 per edge and per escalation edge (questions 2, 4 and 5), as in the example below.
+   None of it is in the migration column, which holds the one-off cost of getting there (beans
+   to bridge, transactions, handlers to write), not the ongoing cost of the shape.
 
 The proposal follows the study's format (`SPLIT-TOOL.md`, *Under function injection*), except
 that the study's version still ended with a remainder, because it was the framework reading of
@@ -484,8 +492,6 @@ reusing the libraries in their own frameworks.
 
 ## Open questions
 
-- The OfficeFloor cost model's questions 4 to 7 (*The OfficeFloor split*), each with a
-  suggested default, to settle before any comparison. Questions 1 to 3 are decided.
 - Where to publish the study's results.
 
 Decided on 31 October 2026, and recorded in the sections above: the Maven group

@@ -29,6 +29,12 @@ A copy of an earlier version of this plan, with the architecture drawn, is the d
   `NOT_SLIMMABLE` and `SLIMMABLE_WITH_RECORD`. They are put in a category conventional first:
   2 if records slim it; else 1 if the default limits slim it once jumps are ignored (guard
   clauses inverted); else 3 if the OfficeFloor column slims it; else 4.
+- The OfficeFloor cost model, questions 4 to 7 (1 November 2026): a decision function costs 1
+  and an edge per branch, the join's edges ordinary edges; an escalation costs only when the
+  split creates a handler (a function and an edge per exception type); the plan is chosen by
+  SinewSlim's order (worst seam, then fewest functions, then total); a function's seam is the
+  values it declares, and the wiring is counted in the total, not the seam or the migration
+  column.
 
 ## Phase 0: Central publishing setup (in SinewSlim; built, uncommitted)
 
@@ -131,7 +137,7 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 ## Phase 4: OfficeFloor split proposals
 
 - [x] Settle cost model questions 1–3 (carried values per declaring function; function and edge 1 each; everything from outside the method free)
-- [ ] Settle cost model questions 4–7 (decision functions, escalations, selection order, where the wiring counts) before any comparison, starting from the suggested defaults
+- [x] Settle cost model questions 4–7 (decision functions, escalations, selection order, where the wiring counts) before any comparison, starting from the suggested defaults (1 November 2026; the defaults, with the join and the new-handler rule made explicit, and the wiring in the total as the worked example has it)
 - [ ] The graph-partition search (`DESIGN.md`, *The OfficeFloor split*)
 - [ ] A `return` ends a function as a `@Next` or flow; a `throw` becomes an escalation
 - [ ] An `if` or `switch` can become a decision function whose branches are flows
