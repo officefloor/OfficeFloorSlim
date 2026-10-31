@@ -35,7 +35,7 @@ SinewSlim's `main` (`build.gradle.kts`, `settings.gradle.kts`, the three modules
 - [x] Dry run: `./gradlew -Pversion=0.2.0 publishAllPublicationsToStagingRepository` writes jar, sources, javadoc and POM per module to `build/staging-deploy`
 - [x] `./gradlew publishToMavenLocal` installs `0.0.0-SNAPSHOT` into `~/.m2`
 - [x] Group `net.officefloor.sinewslim` (already set in SinewSlim's build)
-- [x] Commit to a branch in SinewSlim, `central-libraries` (94e1277, local only, not pushed)
+- [x] Commit to a branch in SinewSlim, `central-libraries` (94e1277, pushed)
 - [ ] Optional: fill in the javadoc comments behind the ~98 warnings
 
 ## Phase 1: restructure the SinewSlim libraries (in SinewSlim)
