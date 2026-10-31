@@ -226,6 +226,13 @@ side by side, so the comparison has to be fair.
   3. Only splits under function injection: the real target
   4. Needs a redesign
 
+  Operationally (decided): a long method SinewSlim cannot slim with one return per piece
+  (`NOT_SLIMMABLE` or `SLIMMABLE_WITH_RECORD`, together the go/no-go bar's denominator) is
+  tested conventional first. Category 2 if records slim it; else 1 if SinewSlim's default
+  limits slim it once jumps are ignored; else 3 if the OfficeFloor column slims it; else 4. So
+  category 3 is only what nothing conventional fixes, the reading least favourable to
+  OfficeFloor.
+
 ## Surfaces
 
 | Surface | Scope | What it does |

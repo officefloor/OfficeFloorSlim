@@ -24,6 +24,11 @@ A copy of an earlier version of this plan, with the architecture drawn, is the d
 - The OfficeFloor cost model, questions 1 to 3: a carried value costs 1 per function that
   declares it; a function and an edge cost 1 each; everything from outside the method is
   injected and free, so only values computed inside it cost.
+- The categories, operationally (1 November 2026). The not-slimmable long methods (M1, the
+  bar's denominator) are both SinewSlim statuses that one return per piece cannot fix:
+  `NOT_SLIMMABLE` and `SLIMMABLE_WITH_RECORD`. They are put in a category conventional first:
+  2 if records slim it; else 1 if the default limits slim it once jumps are ignored (guard
+  clauses inverted); else 3 if the OfficeFloor column slims it; else 4.
 
 ## Phase 0: Central publishing setup (in SinewSlim; built, uncommitted)
 
@@ -110,7 +115,7 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 - [x] Confirm how the experiment produces its Spring and OfficeFloor variants: the same 250-checkpoint stream, agent and specs on paired base repositories `~/officehq-<frontend>-spring` and `-officefloor`
 - [x] Draft the analysis plan (H1–H4, measures, normalisation, the go/no-go bar): `~/ui-long-degradation-test/docs/SINEWSLIM_ANALYSIS_PLAN.md`
 - [x] Commit it (61fe7f1, branch `sinewslim-analysis-plan` in the experiment repository)
-- [ ] Amend it with the run IDs, the SinewSlim commit and `docs/sinewslim-analysis.yml`, **before** SinewSlim reads any branch of the current runs
+- [ ] Amend it with the run IDs, the SinewSlim commit and `docs/sinewslim-analysis.yml`, **before** SinewSlim reads any branch of the current runs; and with the categories' operational definition (decided 1 November 2026), which section 7 leaves open
 - [ ] A scan driver: for each `evolve/<run>/<condition>/chain<N>` branch, run SinewSlim at every checkpoint commit, backend Java only, and write one JSON per commit
 - [ ] Pilot the driver on an old run (for example `officehq-angular-spring`, `evolve/202610112340/just-solve/chain1`), not on the current runs
 - [ ] Check SinewSlim's code lines against Lizard's NLOC on the pilot, so the harness's series can be read beside the new one
