@@ -58,12 +58,12 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 
 - [x] Create `~/OfficeFloorSlim` and `officefloor/OfficeFloorSlim` with `DESIGN.md` and `PLAN.md`
 - [x] Make the repository public
-- [ ] Gradle build: Java 17, the same Gradle version as SinewSlim (9.1.0), group `net.officefloor.sinewslim`, modules `officefloorslim-*`, version from the tag as `-Pversion`
-- [ ] Depend on `sinewslim-facts`, `sinewslim-javaparser`, `sinewslim-scan`, `sinewslim-core` by their coordinates
-- [ ] Composite build against `../SinewSlim` (see `DESIGN.md`, *Local development*); check that an edit in SinewSlim shows up in the next build here
-- [ ] Open both in one IntelliJ workspace
-- [ ] If an unreleased OfficeFloor is needed: `mvn install` in `~/OfficeFloor`, plus `mavenLocal()` restricted to `net.officefloor` snapshots
-- [ ] CI workflow that builds and tests (no publishing yet)
+- [x] Gradle build: Java 17, the same Gradle version as SinewSlim (9.1.0), group `net.officefloor.sinewslim`, modules `officefloorslim-*`, version from the tag as `-Pversion`. One module so far, `officefloorslim-core` (in `core/`, package `net.officefloor.officefloorslim.core`); the CLI comes with Phase 3, the plugin with Phase 2b
+- [x] Depend on `sinewslim-facts`, `sinewslim-javaparser`, `sinewslim-scan`, `sinewslim-core` by their coordinates (`sinewslimVersion` in `gradle.properties`, bumped on a release)
+- [x] Composite build against `../SinewSlim` (see `DESIGN.md`, *Local development*); check that an edit in SinewSlim shows up in the next build here (all four resolve to its projects with no substitution block; a probe constant added there compiled and passed in a test here)
+- [ ] Open both in one IntelliJ workspace (by hand: opening this build imports `../SinewSlim` as its included build)
+- [ ] If an unreleased OfficeFloor is needed: `mvn install` in `~/OfficeFloor`, plus `mavenLocal()` restricted to `net.officefloor` snapshots (not needed yet: nothing here depends on OfficeFloor)
+- [ ] CI workflow that builds and tests (no publishing yet): `.github/workflows/ci.yml`, with SinewSlim's `central-libraries` checked out beside it until its libraries are on Central; ticked once its first run passes
 
 ## Phase 2b: bring the OfficeFloor plugin in
 

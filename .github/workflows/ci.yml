@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # This repository and SinewSlim side by side, as on a developer's machine, so the build
+      # includes ../SinewSlim (DESIGN.md, Local development). Until SinewSlim's libraries are on
+      # Central the only way to have them; the ref follows SinewSlim's restructure until it
+      # merges (then main), and the SinewSlim checkout goes once a release is on Central.
+      - uses: actions/checkout@v5
+        with:
+          path: OfficeFloorSlim
+      - uses: actions/checkout@v5
+        with:
+          repository: officefloor/SinewSlim
+          ref: central-libraries
+          path: SinewSlim
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build and test
+        working-directory: OfficeFloorSlim
+        run: ./gradlew --console=plain build
