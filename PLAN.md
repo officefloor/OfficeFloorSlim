@@ -116,8 +116,8 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 - [x] Draft the analysis plan (H1–H4, measures, normalisation, the go/no-go bar): `~/ui-long-degradation-test/docs/SINEWSLIM_ANALYSIS_PLAN.md`
 - [x] Commit it (61fe7f1, branch `sinewslim-analysis-plan` in the experiment repository)
 - [ ] Amend it with the run IDs, the SinewSlim commit and `docs/sinewslim-analysis.yml`, **before** SinewSlim reads any branch of the current runs; and with the categories' operational definition (decided 1 November 2026), which section 7 leaves open
-- [ ] A scan driver: for each `evolve/<run>/<condition>/chain<N>` branch, run SinewSlim at every checkpoint commit, backend Java only, and write one JSON per commit
-- [ ] Pilot the driver on an old run (for example `officehq-angular-spring`, `evolve/202610112340/just-solve/chain1`), not on the current runs
+- [x] A scan driver: for each `evolve/<run>/<condition>/chain<N>` branch, run SinewSlim at every checkpoint commit, backend Java only, and write one JSON per commit: `study/scan_driver.py`. A checkpoint is its `cpNN reset` commit; only the backend root `stack.yaml` declares is extracted; W1-W3 beside it; OfficeFloorSlim's scan too with `--officefloorslim`, for the categories. It refuses any run not named with `--allow-run`, so no current run is read by accident. Self-tested in CI
+- [x] Pilot the driver on an old run (for example `officehq-angular-spring`, `evolve/202610112340/just-solve/chain1`), not on the current runs (1 November 2026: all 250 checkpoints in 5 minutes, every file parsed; at cp250 803 backend methods, 51 long, M1 9, the same in both tools; categories 1/2/3/4 = 1/2/3/3; the `/__test__` seed method is one of the category 4)
 - [ ] Check SinewSlim's code lines against Lizard's NLOC on the pilot, so the harness's series can be read beside the new one
 - [ ] Wiring counts for the OfficeFloor arms, per commit
 - [ ] Normalise by passing tests, as the harness does, and report raw as well

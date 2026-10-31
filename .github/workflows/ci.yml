@@ -32,3 +32,8 @@ jobs:
       - name: Build and test
         working-directory: OfficeFloorSlim
         run: ./gradlew --console=plain build :intellij:buildPlugin
+      - name: Study scan driver self-test
+        working-directory: OfficeFloorSlim
+        run: |
+          python3 -m pip install --quiet pyyaml
+          python3 study/scan_driver_selftest.py
