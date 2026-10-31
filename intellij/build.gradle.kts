@@ -1,4 +1,5 @@
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 // The OfficeFloor IntelliJ plugin (Marketplace ID net.officefloor.ide.rest.plugin), copied in
 // from officefloor/OfficeFloor-IntelliJ-Plugin at 7bc06d4. Java 17, the group and the version
@@ -15,6 +16,12 @@ repositories {
 }
 
 dependencies {
+    // the graph model, shared with the classification; the plugin reads the YAML by IntelliJ's
+    // PSI, so the SnakeYAML reader's library stays out of the plugin
+    implementation(project(":officefloorslim-graph")) {
+        exclude(group = "org.yaml", module = "snakeyaml")
+    }
+
     intellijPlatform {
         create(
             IntelliJPlatformType.fromCode(providers.gradleProperty("platformType").get()),
@@ -28,11 +35,16 @@ dependencies {
         bundledPlugin("com.intellij.java")
 
         pluginVerifier()
+        // the PSI reader's parity with the graph module's SnakeYAML reader runs in the platform
+        testFramework(TestFrameworkType.Platform)
     }
 
     // the tests are JUnit 4; the root build runs tests on the JUnit Platform
     testImplementation("junit:junit:4.13.2")
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
+    testImplementation("org.opentest4j:opentest4j:1.3.0")
+    // the SnakeYAML reader, to compare the PSI reader with
+    testImplementation("org.yaml:snakeyaml:2.5")
 }
 
 intellijPlatform {

@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import net.officefloor.intellij.flow.model.FlowLink;
+import net.officefloor.officefloorslim.graph.FlowLink;
 
 /** Result of laying out a flow graph: node positions and overall canvas size. */
 public final class LayoutResult {

@@ -12,6 +12,7 @@ if (sinewSlim.isDirectory) {
 // The project names are the artifact names; the directories keep short ones.
 val modules = mapOf(
     "officefloorslim-core" to "core",
+    "officefloorslim-graph" to "graph",
 )
 for ((name, dir) in modules) {
     include(name)

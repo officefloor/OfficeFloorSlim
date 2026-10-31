@@ -1,4 +1,4 @@
-package net.officefloor.intellij.flow.model;
+package net.officefloor.officefloorslim.graph;
 
 import java.util.ArrayList;
 import java.util.Collections;

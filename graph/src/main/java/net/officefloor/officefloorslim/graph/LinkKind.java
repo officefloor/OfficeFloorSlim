@@ -1,4 +1,4 @@
-package net.officefloor.intellij.flow.model;
+package net.officefloor.officefloorslim.graph;
 
 /**
  * Kind of connection between two {@link FlowNode}s. Determines the line style

@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.officefloor.intellij.flow.model.FlowGraph;
-import net.officefloor.intellij.flow.model.FlowLink;
-import net.officefloor.intellij.flow.model.FlowNode;
+import net.officefloor.officefloorslim.graph.FlowGraph;
+import net.officefloor.officefloorslim.graph.FlowLink;
+import net.officefloor.officefloorslim.graph.FlowNode;
 
 /**
  * Auto-layout for a {@link FlowGraph}, flowing top-to-bottom down the page like

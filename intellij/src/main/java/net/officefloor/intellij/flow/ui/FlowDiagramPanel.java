@@ -32,15 +32,15 @@ import com.intellij.ui.JBColor;
 
 import net.officefloor.intellij.flow.layout.LayoutResult;
 import net.officefloor.intellij.flow.layout.NodeBounds;
-import net.officefloor.intellij.flow.model.DataFlowLink;
-import net.officefloor.intellij.flow.model.FlowGraph;
-import net.officefloor.intellij.flow.model.FlowLink;
+import net.officefloor.officefloorslim.graph.DataFlowLink;
+import net.officefloor.officefloorslim.graph.FlowGraph;
+import net.officefloor.officefloorslim.graph.FlowLink;
 // FlowGraph.PARAMETER_VARIABLE referenced below.
-import net.officefloor.intellij.flow.model.FlowNode;
-import net.officefloor.intellij.flow.model.HttpInput;
-import net.officefloor.intellij.flow.model.LinkKind;
-import net.officefloor.intellij.flow.model.NodeKind;
-import net.officefloor.intellij.flow.model.VariableAccess;
+import net.officefloor.officefloorslim.graph.FlowNode;
+import net.officefloor.officefloorslim.graph.HttpInput;
+import net.officefloor.officefloorslim.graph.LinkKind;
+import net.officefloor.officefloorslim.graph.NodeKind;
+import net.officefloor.officefloorslim.graph.VariableAccess;
 
 /**
  * Swing component that renders a {@link FlowGraph} using a pre-computed

@@ -1,4 +1,4 @@
-package net.officefloor.intellij.flow.model;
+package net.officefloor.officefloorslim.graph;
 
 /**
  * An HTTP request value consumed by a function, declared on its Java method via

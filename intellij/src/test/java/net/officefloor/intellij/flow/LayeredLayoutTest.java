@@ -9,11 +9,11 @@ import org.junit.Test;
 
 import net.officefloor.intellij.flow.layout.LayeredLayout;
 import net.officefloor.intellij.flow.layout.LayoutResult;
-import net.officefloor.intellij.flow.model.FlowGraph;
-import net.officefloor.intellij.flow.model.FlowLink;
-import net.officefloor.intellij.flow.model.FlowNode;
-import net.officefloor.intellij.flow.model.LinkKind;
-import net.officefloor.intellij.flow.model.NodeKind;
+import net.officefloor.officefloorslim.graph.FlowGraph;
+import net.officefloor.officefloorslim.graph.FlowLink;
+import net.officefloor.officefloorslim.graph.FlowNode;
+import net.officefloor.officefloorslim.graph.LinkKind;
+import net.officefloor.officefloorslim.graph.NodeKind;
 
 public class LayeredLayoutTest {
 

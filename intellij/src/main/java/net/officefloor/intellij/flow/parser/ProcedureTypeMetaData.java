@@ -4,8 +4,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.officefloor.intellij.flow.model.VariableAccess;
-import net.officefloor.intellij.flow.model.VariableDirection;
+import net.officefloor.officefloorslim.graph.VariableAccess;
+import net.officefloor.officefloorslim.graph.VariableDirection;
 
 /**
  * Loads OfficeFloor's compiled {@code ProcedureType} for a function and converts

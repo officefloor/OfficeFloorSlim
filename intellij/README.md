@@ -134,19 +134,27 @@ In the sandbox IDE, open any file under [`samples/`](samples) — e.g.
 ## Project layout
 
 ```
-src/main/java/net/officefloor/intellij/flow/
-  model/    FlowGraph, FlowNode, FlowLink, NodeKind, LinkKind,
-            VariableAccess, VariableDirection, DataFlowLink      (pure, unit-tested)
+graph/src/main/java/net/officefloor/officefloorslim/graph/     (the officefloorslim-graph module)
+            FlowGraph, FlowNode, FlowLink, NodeKind, LinkKind,
+            VariableAccess, VariableDirection, DataFlowLink,
+            HttpInput, RestFileName                              (the model: pure, unit-tested)
+            ComposeGraph                                         (the YAML -> graph rules)
+            ComposeYamlReader                                    (SnakeYAML, outside the IDE)
+intellij/src/main/java/net/officefloor/intellij/flow/
   layout/   LayeredLayout                                        (Sugiyama-style top-down)
-  parser/   ComposeYamlParser, RestFileName, ComposeContentHeuristic,
-            FunctionMetaData, FunctionMetaDataResolver,          (hybrid resolution)
-            ProcedureTypeMetaData, JavaFunctionVariables, MetaDataEnricher
+  parser/   ComposeYamlParser                                    (PSI -> ComposeGraph)
+            ComposeContentHeuristic, FunctionMetaData,
+            FunctionMetaDataResolver, ProcedureTypeMetaData,     (hybrid resolution)
+            JavaFunctionVariables, MetaDataEnricher
   ui/       FlowDiagramPanel                                     (Swing renderer; both modes)
   editor/   FlowDiagramEditorProvider, FlowDiagramEditor, JavaTargetNavigator
 ```
 
-The `model` and `layout` packages have no IntelliJ dependency and are covered by
-plain JUnit tests.
+The graph model lives in `officefloorslim-graph`, with no IntelliJ dependency, so
+the classification reads the same graph the plugin draws. Both readers of the YAML
+(the plugin's PSI and the scan's SnakeYAML) build it through `ComposeGraph`, and
+`ReaderParityTest` checks they agree, to the offset, on every sample. The `layout`
+package has no IntelliJ dependency either; both are covered by plain JUnit tests.
 
 ## Status / roadmap
 

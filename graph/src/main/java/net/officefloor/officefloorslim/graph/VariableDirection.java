@@ -1,4 +1,4 @@
-package net.officefloor.intellij.flow.model;
+package net.officefloor.officefloorslim.graph;
 
 /** Direction a function accesses a variable. */
 public enum VariableDirection {

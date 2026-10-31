@@ -1,6 +1,4 @@
-package net.officefloor.intellij.flow.parser;
-
-import com.intellij.openapi.vfs.VirtualFile;
+package net.officefloor.officefloorslim.graph;
 
 /**
  * Derives the HTTP endpoint (method + URL path) that an OfficeFloor REST
@@ -36,30 +34,25 @@ public final class RestFileName {
 		return this.httpMethod + " " + this.urlPath;
 	}
 
-	/** @return a {@link RestFileName} if the file sits under a {@code rest} dir, else {@code null}. */
-	public static RestFileName parse(VirtualFile file) {
-		if (file == null) {
+	/**
+	 * @param path the file's path, with {@code /} separators (an IDE file's path, or one relative
+	 *             to a repository's root)
+	 * @return a {@link RestFileName} if the file sits under a {@code rest} dir, else {@code null}.
+	 */
+	public static RestFileName parse(String path) {
+		if (path == null || path.isEmpty()) {
 			return null;
 		}
 		// Walk up collecting path segments until a "rest" directory is found.
-		StringBuilder relative = new StringBuilder();
-		VirtualFile current = file;
-		String fileName = stripExtension(file.getName());
-		relative.append(fileName);
-		VirtualFile parent = current.getParent();
-		boolean foundRest = false;
-		while (parent != null) {
-			if ("rest".equals(parent.getName())) {
-				foundRest = true;
-				break;
+		String[] segments = path.split("/");
+		StringBuilder relative = new StringBuilder(stripExtension(segments[segments.length - 1]));
+		for (int i = segments.length - 2; i >= 0; i--) {
+			if ("rest".equals(segments[i])) {
+				return fromItemName(relative.toString());
 			}
-			relative.insert(0, parent.getName() + "/");
-			parent = parent.getParent();
+			relative.insert(0, segments[i] + "/");
 		}
-		if (!foundRest) {
-			return null;
-		}
-		return fromItemName(relative.toString());
+		return null;
 	}
 
 	/** Parses a REST item name (relative path, no extension) into method + path. */

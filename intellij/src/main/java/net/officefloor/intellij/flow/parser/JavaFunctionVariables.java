@@ -19,9 +19,9 @@ import com.intellij.psi.PsiType;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiUtil;
 
-import net.officefloor.intellij.flow.model.HttpInput;
-import net.officefloor.intellij.flow.model.VariableAccess;
-import net.officefloor.intellij.flow.model.VariableDirection;
+import net.officefloor.officefloorslim.graph.HttpInput;
+import net.officefloor.officefloorslim.graph.VariableAccess;
+import net.officefloor.officefloorslim.graph.VariableDirection;
 
 /**
  * Extracts the OfficeFloor variables (reads/writes) declared on a function's

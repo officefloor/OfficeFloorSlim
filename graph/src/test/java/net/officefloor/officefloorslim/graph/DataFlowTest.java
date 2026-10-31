@@ -1,4 +1,4 @@
-package net.officefloor.intellij.flow;
+package net.officefloor.officefloorslim.graph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -7,14 +7,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import net.officefloor.intellij.flow.model.DataFlowLink;
-import net.officefloor.intellij.flow.model.FlowGraph;
-import net.officefloor.intellij.flow.model.FlowLink;
-import net.officefloor.intellij.flow.model.FlowNode;
-import net.officefloor.intellij.flow.model.LinkKind;
-import net.officefloor.intellij.flow.model.NodeKind;
-import net.officefloor.intellij.flow.model.VariableAccess;
-import net.officefloor.intellij.flow.model.VariableDirection;
 
 public class DataFlowTest {
 

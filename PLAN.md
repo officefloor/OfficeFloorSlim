@@ -72,7 +72,7 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 - [ ] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor" (`plugin.xml` says "OfficeFloor" now; the listing follows with the first release from here)
 - [x] Keep its signing and Marketplace publishing; move its release workflow across (`release.yml`, `verify-plugin.yml`, on `:intellij`)
 - [ ] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets
-- [ ] Expose the graph model (which classes and methods are wired as functions) to the classification
+- [x] Expose the graph model (which classes and methods are wired as functions) to the classification: `officefloorslim-graph` (`graph/`, package `net.officefloor.officefloorslim.graph`) holds the model and `ComposeGraph`, the YAML rules; the plugin reads by PSI, the scan by SnakeYAML (`ComposeYamlReader`), and `ReaderParityTest` checks they give the same graph on every sample
 - [ ] After the first release from here: archive the old repository with a pointer to this one
 
 ## Phase 3: scan and the study (the go/no-go)

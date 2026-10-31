@@ -1,4 +1,4 @@
-package net.officefloor.intellij.flow.model;
+package net.officefloor.officefloorslim.graph;
 
 /**
  * A derived data-flow connection: a function that writes a variable (the

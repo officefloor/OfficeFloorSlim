@@ -15,9 +15,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.OrderEnumerator;
 import com.intellij.openapi.vfs.VirtualFile;
 
-import net.officefloor.intellij.flow.model.FlowGraph;
-import net.officefloor.intellij.flow.model.FlowNode;
-import net.officefloor.intellij.flow.model.NodeKind;
+import net.officefloor.officefloorslim.graph.FlowGraph;
+import net.officefloor.officefloorslim.graph.FlowNode;
+import net.officefloor.officefloorslim.graph.NodeKind;
 
 /**
  * Resolves per-function metadata (variables, {@code @Parameter}, return type)

@@ -1,4 +1,4 @@
-package net.officefloor.intellij.flow.model;
+package net.officefloor.officefloorslim.graph;
 
 /**
  * Kind of node in an OfficeFloor flow graph. Determines how the node is drawn

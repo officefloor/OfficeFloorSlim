@@ -3,8 +3,8 @@ package net.officefloor.intellij.flow.parser;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.officefloor.intellij.flow.model.HttpInput;
-import net.officefloor.intellij.flow.model.VariableAccess;
+import net.officefloor.officefloorslim.graph.HttpInput;
+import net.officefloor.officefloorslim.graph.VariableAccess;
 
 /**
  * The resolved metadata of a function: the variables it accesses, the type of

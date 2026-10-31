@@ -30,16 +30,16 @@ import com.intellij.util.ui.JBUI;
 
 import net.officefloor.intellij.flow.layout.LayeredLayout;
 import net.officefloor.intellij.flow.layout.LayoutResult;
-import net.officefloor.intellij.flow.model.FlowGraph;
-import net.officefloor.intellij.flow.model.FlowLink;
-import net.officefloor.intellij.flow.model.FlowNode;
-import net.officefloor.intellij.flow.model.HttpInput;
-import net.officefloor.intellij.flow.model.VariableAccess;
 import net.officefloor.intellij.flow.parser.ComposeYamlParser;
 import net.officefloor.intellij.flow.parser.FunctionMetaData;
 import net.officefloor.intellij.flow.parser.MetaDataEnricher;
 import net.officefloor.intellij.flow.ui.FlowControlPanel;
 import net.officefloor.intellij.flow.ui.FlowDiagramPanel;
+import net.officefloor.officefloorslim.graph.FlowGraph;
+import net.officefloor.officefloorslim.graph.FlowLink;
+import net.officefloor.officefloorslim.graph.FlowNode;
+import net.officefloor.officefloorslim.graph.HttpInput;
+import net.officefloor.officefloorslim.graph.VariableAccess;
 
 /**
  * The "Flow" editor tab: renders an OfficeFloor compose/activity YAML file as an

@@ -5,8 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.officefloor.intellij.flow.model.VariableAccess;
-import net.officefloor.intellij.flow.model.VariableDirection;
+import net.officefloor.officefloorslim.graph.VariableAccess;
+import net.officefloor.officefloorslim.graph.VariableDirection;
 
 /**
  * Merges the authoritative compiled {@link FunctionMetaData} (from
