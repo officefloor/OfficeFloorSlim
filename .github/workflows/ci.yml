@@ -38,3 +38,4 @@ jobs:
           python3 -m pip install --quiet pyyaml
           python3 study/scan_driver_selftest.py
           python3 study/lizard_compare_selftest.py
+          python3 study/normalise_selftest.py
