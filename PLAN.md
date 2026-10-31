@@ -107,7 +107,8 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 
 - [x] Confirm how the experiment produces its Spring and OfficeFloor variants: the same 250-checkpoint stream, agent and specs on paired base repositories `~/officehq-<frontend>-spring` and `-officefloor`
 - [x] Draft the analysis plan (H1–H4, measures, normalisation, the go/no-go bar): `~/ui-long-degradation-test/docs/SINEWSLIM_ANALYSIS_PLAN.md`
-- [ ] Fill in its run IDs and SinewSlim commit, add `docs/sinewslim-analysis.yml`, and commit it, **before** SinewSlim reads any branch of the current runs
+- [x] Commit it (61fe7f1, branch `sinewslim-analysis-plan` in the experiment repository)
+- [ ] Amend it with the run IDs, the SinewSlim commit and `docs/sinewslim-analysis.yml`, **before** SinewSlim reads any branch of the current runs
 - [ ] A scan driver: for each `evolve/<run>/<condition>/chain<N>` branch, run SinewSlim at every checkpoint commit, backend Java only, and write one JSON per commit
 - [ ] Pilot the driver on an old run (for example `officehq-angular-spring`, `evolve/202610112340/just-solve/chain1`), not on the current runs
 - [ ] Check SinewSlim's code lines against Lizard's NLOC on the pilot, so the harness's series can be read beside the new one
