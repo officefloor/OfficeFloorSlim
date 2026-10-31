@@ -86,8 +86,8 @@ Each arrow points from a part to what it depends on. Two rules hold:
 |---|---|---|
 | SinewSlim libraries | Parsing, method facts, seam roles, scanning; the conventional cost and split | Maven Central, `net.officefloor.sinewslim:sinewslim-*` |
 | SinewSlim tools | Health scan, review gate, conventional split in the IDE | CLI jar, Docker image, GitHub Action, GitLab component, JetBrains plugin |
-| OfficeFloorSlim | Classification, OfficeFloor cost and split, wiring, migration, assessments | Docker image and CLI; libraries on Central only if others need them (open) |
-| OfficeFloorSlim IntelliJ plugin | OfficeFloor development and visualisation (today's OfficeFloor REST View), with long functions and their splits marked on the graphs | JetBrains Marketplace, keeping the plugin ID `net.officefloor.ide.rest.plugin` |
+| OfficeFloorSlim | Classification, OfficeFloor cost and split, wiring, assessments | Docker image and CLI; nothing on Central (self-contained: only SinewSlim's libraries are shared) |
+| OfficeFloorSlim IntelliJ plugin | OfficeFloor development and visualisation (today's OfficeFloor REST View), long functions and their splits marked on the graphs, and the AI-assisted migration | JetBrains Marketplace as "OfficeFloor", keeping the plugin ID `net.officefloor.ide.rest.plugin` |
 
 ### The shared libraries
 
@@ -147,6 +147,36 @@ starting shape, not a settled specification.
 - **Not slimmable:** its own reasons, chiefly loops and the values carried across edges,
   instead of SinewSlim's jumps.
 
+**What the cost model still has to settle** (Phase 4, before any OfficeFloor figure is
+compared with a SinewSlim one, so the weights are not tuned after seeing which way they go).
+The suggested default follows each question:
+
+1. **A value used by several later functions:** does it cost once (it is one variable, named
+   once) or once per function that declares it (each declaration is something a reader has to
+   follow)? *Default: once per declaring function.* That is the conservative choice, and it is
+   what makes "values carried a long way" show up as a cost.
+2. **The cost of a function and of an edge,** against one carried value. Conventionally a piece
+   costs its seam plus 1 for the name and call. *Default: a function costs 1 (its name) and an
+   edge costs 1 (its wiring), so a two-function split pays 1 more than a conventional
+   extraction for the edge.* Otherwise the OfficeFloor side is cheaper just by leaving the
+   wiring out.
+3. **What counts as injected:** the method's own parameters and managed objects only, or also
+   values from earlier functions that were *not* computed in this method? *Default: only the
+   method's parameters and managed objects are free.* Everything computed inside the method
+   costs when it crosses an edge.
+4. **A decision function:** what does turning an `if` or `switch` into flows cost? *Default:
+   one function for the decision plus one edge per branch*, so a five-way `switch` is visibly
+   dearer than a two-way `if`.
+5. **An escalation:** is a `throw` that becomes an escalation free, or does it cost an edge to
+   its handler? *Default: one edge, unless an existing handler already covers that exception
+   type.*
+6. **The selection order:** the same as SinewSlim's (the smallest worst seam, then the fewest
+   pieces, then the smallest total)? *Default: yes*, so the two columns pick their plans by the
+   same rule.
+7. **Where the wiring is counted:** in the seam, or only in the migration-cost column?
+   *Default: in the seam (questions 2, 4 and 5).* The migration column holds the one-off cost
+   of getting there (beans, transactions, handlers), not the ongoing cost of the shape.
+
 The proposal reads like the study's (`SPLIT-TOOL.md`, *Under function injection*):
 
 ```
@@ -169,14 +199,18 @@ The two costs count different things: SinewSlim counts parameters and returns; O
 counts values carried between functions and edges. People will compare them once they are
 side by side, so the comparison has to be fair.
 
-- **A common unit, or two columns (open).** For example, one *sinew* per value that crosses a
-  boundary, and one per call or edge. Otherwise report the two side by side.
+- **Two columns, never a common unit (decided).** The SinewSlim cost and the OfficeFloor cost
+  are reported side by side, each in its own terms. A common unit would need a weight that
+  turns one into the other, and that weight is exactly what a sceptical reader would say was
+  chosen to flatter OfficeFloor.
 - **Migration cost, its own column.** A method that splits cleanly but drags six Spring beans
   and a `@Transactional` with it is not cheap. Count the beans to bridge or turn into managed
   objects, the transaction boundaries, the exceptions that become escalations, and the wiring
   to write.
 - **Growth.** Line count is a snapshot. Add git history: lines added to the method and how
-  often it was touched over a window (open: the last N commits or the last 12 months). "Over
+  often it was touched over a window: the last N commits or the last 12 months, whichever is
+  shorter (decided). AI-written code can make N commits in days; a slower codebase falls back
+  to a year. N is configurable, default 500. "Over
   26, not slimmable, and grew 40 lines this year" is the case for containment.
 - **Categories, labelled honestly.** Not every unsplittable method needs OfficeFloor: many
   guard-clause methods can be fixed conventionally.
@@ -191,7 +225,7 @@ side by side, so the comparison has to be fair.
 |---|---|---|
 | **Scan / assess** (CLI and Docker image) | A whole repository | Classifies every method; for those over the cap, the SinewSlim cost, the OfficeFloor cost, the signed difference, the migration cost, growth and the category. Versioned JSON, plus HTML or Markdown |
 | **IntelliJ plugin** | The project's OfficeFloor graphs and the method under the cursor | Long functions highlighted on the graphs; the proposed split previewed as new functions and flows; the refactoring that applies it |
-| **Migration** (opt-in) | One method and the code around it | The plan from the algorithm, the code rewritten to it by an AI, checked |
+| **Migration** (opt-in, in the IntelliJ plugin only) | One method and the code around it | The plan from the algorithm, the code rewritten to it by an AI, checked |
 
 A review gate in CI (like SinewSlim's `review`) may follow once the scan has shown its worth.
 It is not in the plan yet.
@@ -204,9 +238,11 @@ live, signed by OfficeFloor, publishing secrets set by OfficeFloorMaintenance's
 `setup-jetbrains-publishing.sh`). It moves into this repository as the `intellij` module,
 the way SinewSlim holds its own:
 
-- its git history is kept (`git subtree` or `git filter-repo`);
-- its plugin ID is kept, so everyone with it installed gets the update (the display name is an
-  open decision);
+- its files are copied in as one commit, without its git history (it was a couple of commits
+  in an evening; the old repository stays as the record until it is archived);
+- its plugin ID is kept, so everyone with it installed gets the update; its Marketplace name
+  changes from "OfficeFloor REST View" to "OfficeFloor", since it now covers any OfficeFloor
+  function, not only REST;
 - its graph model is exposed to the classification, which is the strongest evidence that a
   method is an OfficeFloor function;
 - the analysis marks long functions and their proposed splits on the graphs;
@@ -222,20 +258,108 @@ the way SinewSlim holds its own:
   and the tests run. If the rewrite fails, the developer keeps the plan.
 - **Contained.** One method at a time. OfficeFloor can host Spring beans, so a long method
   moves without moving the application: a strangler pattern at method level.
-- **Opt-in.** Only with AI credentials and configuration provided. The default provider, model
-  and where the credentials live (IDE settings, environment, CI secret) are open decisions.
+- **Opt-in.** Only with AI credentials and configuration provided.
+- **In the IntelliJ plugin only (decided).** The migration changes code, and for now a person
+  looks at every change straight after it is made, so it lives where the code is viewed. The
+  CLI, Docker image and review tools report and propose; they never rewrite.
+- **Pluggable providers (decided).** One small interface (send the plan and the code, get the
+  rewritten code back), with implementations for the main providers (Anthropic, OpenAI,
+  Google) and a local or OpenAI-compatible endpoint. The provider, model and key are set in
+  the IDE's settings, the key in IntelliJ's credential store. No provider is privileged.
 
 ## Empirical studies and public assessments
 
-The same two-cost scan serves three purposes, and each needs results that hold up for a
-reader sceptical of OfficeFloor.
+The empirical study is `~/ui-long-degradation-test`. It serves the Spring versus OfficeFloor
+comparison and the academic question of mutative versus additive architecture, with the same
+data. Public assessments of other repositories are a separate use of the same scan, not part
+of the study. Every result has to hold up for a reader sceptical of OfficeFloor.
 
-1. **Spring versus OfficeFloor** on `~/ui-long-degradation-test`: measure its Java output with
-   SinewSlim, then for every method over 26 lines ask OfficeFloorSlim for the OfficeFloor split
-   cost. (Not yet examined from this project: first confirm how it produces each variant.)
-2. **Mutative versus additive architecture**, for academic research.
-3. **Public assessments** anyone can run on an open-source repository, showing where function
-   injection would reduce split costs, and where it would increase them.
+### The experiment (reviewed 31 October 2026)
+
+- **One application grown from nothing.** Each stack starts from an empty base (`base-empty`:
+  a front-end shell, Spring Boot with or without OfficeFloor, Flyway on an empty in-memory H2)
+  and is grown by 250 plain-English change requests. The current stream is the *early-overload*
+  one (`docs/EARLY_OVERLOAD_DESIGN.md`). It is domain-free: people with raw values, concepts
+  computed from values and from each other, and relationships whose cardinality migrates. A
+  hub value, `keel`, is read by about 40 concepts and redefined ten times, so each
+  redefinition ripples through everything that reads it. Cross-cutting rules (trim, rounding,
+  held people, sinks, missing values) arrive early, at checkpoints 4 to 20. The cadence is
+  three additive requests to one mutative one.
+- **Each request is full-stack:** a schema migration, the backend, the front-end and its own
+  Playwright spec, which binds only to `data-testid`. The specs are the stable contract while
+  everything beneath them churns. Every expected value is checked against an executable
+  reference model.
+- **The agent:** a fresh `claude-opus-5-5` per checkpoint, blind to earlier requests, able to
+  run its own spec. The full accumulated suite is the regression gate afterwards. The current
+  runs use the ungated `just-solve` condition, with 10 chains per stack.
+- **The stacks** are base repositories `~/officehq-<frontend>-<backend>`: Angular, htmx and
+  TanStack, each with a `-spring` and an `-officefloor` backend, plus `react-officefloor` and
+  `tanstack-mixed`. A Spring and OfficeFloor pair shares the front-end, harness, agent and
+  stream, so **the backend architecture is the variable**.
+- **The record:** every checkpoint is a commit on `evolve/<run_id>/<condition>/chain<N>` in the
+  stack's repository, pushed by `push.sh`. The harness already measures Lizard CC and NLOC,
+  ImpactGate, CK, hotspots, a boundary-violation count (touches to shared or central files),
+  the Zero-Regression Rate and a cold-reader comprehension probe.
+
+### What SinewSlim adds
+
+Because every checkpoint is a commit, SinewSlim runs **after the fact** on each one. Nothing in
+the running experiment changes.
+
+- **Primary erosion measure:** the number of backend methods at 26 code lines or more that
+  **cannot be brought under 25** (SinewSlim's *not slimmable*), at each checkpoint, per chain
+  and per stack, with the reason (jumps, outputs, inputs, length). A method that cannot be
+  slimmed is the one that only gets harder to take apart as more is added. That makes it a
+  direct measure of erosion, not a proxy.
+- **Secondary:** the number of methods over 26; the slim cost of each slimmable one; *locked*
+  methods (god methods); lines added per method per change; the worst seam's growth over the
+  run.
+- **Measured the same way on both arms.** The primary measure is SinewSlim's conventional
+  reading on the Spring arm *and* the OfficeFloor arm. OfficeFloor functions are priced as if
+  their pieces had to be extracted conventionally, which is conservative towards OfficeFloor.
+  The OfficeFloor reading (the projected cost under function injection) is a second column,
+  labelled as projected.
+
+### What has to be got right
+
+- **The wiring is code too.** The OfficeFloor arm keeps structure in
+  `src/main/resources/officefloor/**` YAML, which SinewSlim does not read. Measuring Java alone
+  would flatter OfficeFloor. Beside the Java measures, count the wiring at each checkpoint: its
+  lines, functions and edges, and how often a change touches it. The harness's
+  boundary-violation count already covers part of this.
+- **Backend only.** SinewSlim reads Java. Front-end erosion stays with the harness's Lizard
+  series and is not compared with these measures.
+- **Normalise by behaviour.** An arm that fails more checkpoints carries less behaviour. Report
+  each measure per passing test (the harness's denominator) as well as raw.
+- **One definition of a line:** SinewSlim's code lines, as in the paper, not Lizard's NLOC. On
+  one run, show that the two agree closely enough that the harness's existing series can be
+  read beside them.
+- **The analysis plan before the analysis.** The runs were under way before this plan existed,
+  so the runs themselves cannot be pre-registered. But no SinewSlim measure has been computed on
+  any of them yet. The hypotheses, the measures and the comparison are committed to the
+  experiment's repository, dated, **before** SinewSlim first reads a run's branches. That is a
+  registered analysis of existing data, and the write-up says so.
+- **Pilot on an old run, not the new one.** Older runs (for example
+  `evolve/202610112340/just-solve/chain1` in `officehq-angular-spring`, on an earlier stream)
+  exercise the pipeline without looking at the data the hypotheses are about.
+
+### Hypotheses (draft, fixed before the first scan)
+
+1. **H1, the headline.** Not-slimmable backend methods accumulate faster on the Spring arm than
+   on the OfficeFloor arm of the same front-end, per passing test, over the 250 checkpoints.
+2. **H2, the mechanism.** On the Spring arm, the not-slimmable reasons are mostly jumps and
+   multiple outputs, the signature of behaviour added *inside* existing methods.
+3. **H3, the shocks.** The `keel` redefinitions raise the Spring arm's not-slimmable count by
+   more than the OfficeFloor arm's.
+4. **H4, the cost OfficeFloor could be hiding.** The OfficeFloor arm's wiring grows roughly in
+   proportion to behaviour, and does not concentrate in a few files. If it does concentrate,
+   the erosion has moved from Java to YAML, and the result says so.
+
+Every method where OfficeFloor comes out worse is listed, not only the savings.
+
+**Exploratory, labelled as such:** whether an agent's failures at a checkpoint go with the
+length or the sinew of the methods it had to change. This is the AI reasoning-limit question:
+whether an agent's limit is set by lines or by the values carried through a method.
 
 **Two kinds of measure, always labelled apart:**
 
@@ -247,37 +371,36 @@ reader sceptical of OfficeFloor.
 A projection is an estimate. It is checked on a sample by doing the splits and measuring the
 result.
 
-**Mutative versus additive.** The hypothesis: in a mutative architecture new behaviour is added
-inside existing methods, which grow branches and early returns until they cannot be split; in
-an additive one (function injection) new behaviour arrives as new functions and flows, so
-methods stay bounded. It is measured over the sequence of changes, not only at the end:
-
-- methods over 26 lines, at each step;
-- the share not slimmable, and the reason (jumps, inputs, outputs, length);
-- lines added per method per change;
-- the projected OfficeFloor cost against the conventional cost, as a signed difference.
+**Mutative versus additive.** The academic framing of the same data. In a mutative
+architecture new behaviour is added inside existing methods, which grow branches and early
+returns until they cannot be split. In an additive one (function injection) new behaviour
+arrives as new functions and flows, so methods stay bounded. H1 to H3 are its predictions, and
+H4 is its main threat.
 
 **Keeping it credible:**
 
-- the hypotheses and metrics written down before the runs;
+- the analysis plan committed before the first scan, as above;
 - tool versions and `.sinew-slim.yml` pinned, raw JSON published with every result;
 - every method where OfficeFloor costs more (wiring, carried values) reported, not only the
   savings;
-- both variants of the test application implementing the same features, so the difference is
-  the architecture and not the scope;
+- both arms grown by the same stream and judged by the same specs, so the difference is the
+  architecture and not the scope;
 - the comparison computed here, never in SinewSlim.
 
 **Public assessment:** an `assess` command in the CLI and Docker image. Point it at a
 repository and get both costs per method, the signed difference and totals by category, as
 versioned JSON and a readable report. Worked examples on the corpora SinewSlim already uses
-(OfficeFloor and the MLCQ repositories).
+(OfficeFloor and the MLCQ repositories). These are demonstrations of the tool, not part of the
+study.
 
 ## Language, build and coordinates
 
 - Java 17 and Gradle, as SinewSlim (the IntelliJ Platform's floor for the 2024.2 line).
-- Maven group `net.officefloor.slim` (open: or `net.officefloor.sinewslim`). Never the bare
-  `net.officefloor` group, so nothing collides with OfficeFloor's own artifacts or its BOM.
-  Versions are this project's own, starting at 0.x.
+- Maven group `net.officefloor.sinewslim` for both projects (decided). The artifact names keep
+  them apart: `sinewslim-*` for SinewSlim's libraries, `officefloorslim-*` for this project's
+  modules. Only SinewSlim publishes to Central; this project's modules never leave its own
+  build. Never the bare `net.officefloor` group, so nothing collides with OfficeFloor's own
+  artifacts or its BOM. Versions are this project's own, starting at 0.x.
 - Licence Apache-2.0, as SinewSlim and OfficeFloor.
 
 ### Local development
@@ -348,16 +471,15 @@ reusing the libraries in their own frameworks.
 
 ## Open questions
 
-- Maven group: `net.officefloor.slim` or `net.officefloor.sinewslim`?
-- The two costs: a common unit, or side by side with migration cost as its own column?
-- Does OfficeFloorSlim publish libraries of its own to Central, or only its tools?
-- Which Spring codebases join `~/ui-long-degradation-test` in the study?
-- The AI provider and model by default, and where the credentials live.
-- The window for the growth measure: the last N commits, or the last 12 months?
-- The plugin's Marketplace name: keep "OfficeFloor REST View", or rename it to match? The
-  plugin ID stays either way.
-- Where to publish the mutative versus additive study, and whether the hypotheses are
-  registered before the runs.
+- The OfficeFloor cost model's seven questions (*The OfficeFloor split*), each with a suggested
+  default, to settle before any comparison.
+- Where to publish the study's results.
+
+Decided on 31 October 2026, and recorded in the sections above: the Maven group
+(`net.officefloor.sinewslim` for both), no Central libraries from this project, the plugin
+copied in without its history and renamed "OfficeFloor", the two costs side by side, the growth
+window (N commits or 12 months, whichever is shorter), the migration in the plugin only with
+pluggable providers, the study being `~/ui-long-degradation-test`, and this repository public.
 
 ## Sources
 
@@ -369,4 +491,5 @@ reusing the libraries in their own frameworks.
   (*Under function injection*): the reading this product turns into an algorithm.
 - `~/OfficeFloor-IntelliJ-Plugin`: the plugin moving into this repository.
 - `~/OfficeFloor`: the framework, and its Maven Central release (`.github/workflows/release.yml`).
-- `~/ui-long-degradation-test`: the application for the Spring versus OfficeFloor study.
+- `~/ui-long-degradation-test` (`README.md`, `DESIGN.md`, `docs/EARLY_OVERLOAD_DESIGN.md`,
+  `config.yaml`): the empirical study; the stacks are `~/officehq-*`.
