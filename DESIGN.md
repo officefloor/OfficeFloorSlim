@@ -151,19 +151,17 @@ starting shape, not a settled specification.
 compared with a SinewSlim one, so the weights are not tuned after seeing which way they go).
 The suggested default follows each question:
 
-1. **A value used by several later functions:** does it cost once (it is one variable, named
-   once) or once per function that declares it (each declaration is something a reader has to
-   follow)? *Default: once per declaring function.* That is the conservative choice, and it is
-   what makes "values carried a long way" show up as a cost.
-2. **The cost of a function and of an edge,** against one carried value. Conventionally a piece
-   costs its seam plus 1 for the name and call. *Default: a function costs 1 (its name) and an
-   edge costs 1 (its wiring), so a two-function split pays 1 more than a conventional
-   extraction for the edge.* Otherwise the OfficeFloor side is cheaper just by leaving the
-   wiring out.
-3. **What counts as injected:** the method's own parameters and managed objects only, or also
-   values from earlier functions that were *not* computed in this method? *Default: only the
-   method's parameters and managed objects are free.* Everything computed inside the method
-   costs when it crosses an edge.
+1. **A value used by several later functions (decided):** it costs **once per function that
+   declares it**, because each declaration is something a reader has to follow. This is the
+   conservative choice, and it is what makes "values carried a long way" show up as a cost.
+2. **The cost of a function and of an edge (decided):** **1 each.** A function costs 1 (its
+   name) and an edge costs 1 (its wiring), so a two-function split pays 1 more than a
+   conventional extraction for the edge. Otherwise the OfficeFloor side would be cheaper just
+   by leaving the wiring out.
+3. **What counts as injected (decided):** **everything that comes from outside the method is
+   free**: its parameters, managed objects, and any value that reaches it already made. A
+   value computed *inside* the method and handed from one of its new functions to a later one
+   is the only data that costs, at 1 per declaring function (question 1).
 4. **A decision function:** what does turning an `if` or `switch` into flows cost? *Default:
    one function for the decision plus one edge per branch*, so a five-way `switch` is visibly
    dearer than a two-way `if`.
@@ -471,8 +469,8 @@ reusing the libraries in their own frameworks.
 
 ## Open questions
 
-- The OfficeFloor cost model's seven questions (*The OfficeFloor split*), each with a suggested
-  default, to settle before any comparison.
+- The OfficeFloor cost model's questions 4 to 7 (*The OfficeFloor split*), each with a
+  suggested default, to settle before any comparison. Questions 1 to 3 are decided.
 - Where to publish the study's results.
 
 Decided on 31 October 2026, and recorded in the sections above: the Maven group

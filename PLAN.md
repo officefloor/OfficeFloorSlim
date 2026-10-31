@@ -19,6 +19,11 @@ A copy of an earlier version of this plan, with the architecture drawn, is the d
 - AI migration lives only in the IntelliJ plugin, with pluggable providers.
 - The empirical study is `~/ui-long-degradation-test`.
 - This repository is public.
+- The go/no-go bar: category 3 at least a quarter of the not-slimmable long methods, and at
+  least 30 of them (Phase 3).
+- The OfficeFloor cost model, questions 1 to 3: a carried value costs 1 per function that
+  declares it; a function and an edge cost 1 each; everything from outside the method is
+  injected and free, so only values computed inside it cost.
 
 ## Phase 0: Central publishing setup (in SinewSlim; built, uncommitted)
 
@@ -113,7 +118,8 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 
 ## Phase 4: OfficeFloor split proposals
 
-- [ ] Settle the cost model's seven questions (`DESIGN.md`, *The OfficeFloor split*) before any comparison, starting from the suggested defaults
+- [x] Settle cost model questions 1–3 (carried values per declaring function; function and edge 1 each; everything from outside the method free)
+- [ ] Settle cost model questions 4–7 (decision functions, escalations, selection order, where the wiring counts) before any comparison, starting from the suggested defaults
 - [ ] The graph-partition search (`DESIGN.md`, *The OfficeFloor split*)
 - [ ] A `return` ends a function as a `@Next` or flow; a `throw` becomes an escalation
 - [ ] An `if` or `switch` can become a decision function whose branches are flows
