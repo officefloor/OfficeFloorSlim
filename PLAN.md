@@ -139,6 +139,11 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 
 ## Phase 4: OfficeFloor split proposals
 
+**Paused (1 November 2026) until the go/no-go bar can be read.** The search, its cost model and
+its limits are built and decided; the plugin work and the removal of `Params.framework()` wait.
+To resume: the study's runs finish, the analysis plan's amendments are committed, the driver
+scans the Spring arms at cp250 with `--officefloorslim`, and the bar is read.
+
 - [x] Settle cost model questions 1–3 (carried values per declaring function; function and edge 1 each; everything from outside the method free)
 - [x] Settle cost model questions 4–7 (decision functions, escalations, selection order, where the wiring counts) before any comparison, starting from the suggested defaults (1 November 2026; the defaults, with the join and the new-handler rule made explicit, and the wiring in the total as the worked example has it)
 - [x] The graph-partition search (`DESIGN.md`, *The OfficeFloor split*): `OfficeFloorSplit`, `officefloorslim-split/1`, a dynamic program over each statement sequence (runs of whole statements, or one long compound statement expanded), the plan chosen by worst seam, then functions, then total
