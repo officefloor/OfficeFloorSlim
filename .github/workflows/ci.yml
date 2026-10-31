@@ -39,3 +39,4 @@ jobs:
           python3 study/scan_driver_selftest.py
           python3 study/lizard_compare_selftest.py
           python3 study/normalise_selftest.py
+          python3 study/agent_limit_selftest.py
