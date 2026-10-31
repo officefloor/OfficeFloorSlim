@@ -35,6 +35,9 @@ A copy of an earlier version of this plan, with the architecture drawn, is the d
   SinewSlim's order (worst seam, then fewest functions, then total); a function's seam is the
   values it declares, and the wiring is counted in the total, not the seam or the migration
   column.
+- The OfficeFloor split's limits (1 November 2026, before the study's runs are read): at most 5
+  carried values per function, as SinewSlim's parameter limit; a lambda's body and a loop are
+  never cut, as planned.
 
 ## Phase 0: Central publishing setup (in SinewSlim; built, uncommitted)
 
@@ -142,7 +145,7 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 - [x] A `return` ends a function as a `@Next` or flow; a `throw` becomes an escalation (a return before a function's end is one flow, to the end; an escalation costs only where a try is cut, question 5)
 - [x] An `if` or `switch` can become a decision function whose branches are flows (a switch whose cases fall through is not cut; its default and arrow form are read with the shape)
 - [x] Loops, `break` and `continue` still block a split (so do `synchronized` and labeled statements, a try with resources or a finally, and a lambda's body, which runs inside its call)
-- [x] Its own not-slimmable reasons (loops, carried values): loop, long statement, try, switch, carried, jumps, with the blocking statement. The carried-value limit is 5 per function, as SinewSlim's parameter limit (not one of questions 1 to 7: to confirm)
+- [x] Its own not-slimmable reasons (loops, carried values): loop, long statement, try, switch, carried, jumps, with the blocking statement. The carried-value limit is 5 per function, as SinewSlim's parameter limit (decided)
 - [x] Tests from hand-written fact sets and fixture sources, as SinewSlim's: `OfficeFloorSplitTest`, 12 cases worked out by hand against the cost model
 - [ ] Re-run the study's scan with the real OfficeFloor column in place of the framework reading: the scan's column is the split now (`officefloorslim-scan/2`); the study's runs are still to come. Read so far (1 November 2026): on OfficeFloor itself category 3 falls from 12 to 8 (6.7% of 119), and on the pilot chain at cp250 from 3 to 0. Loops are the commonest block (82 of the 164 long methods with no plan on OfficeFloor), then long single statements: on the pilot, `recordPayment` is one 130-line `found.ifPresent(invoice -> {...})`, a lambda the split does not cut (SinewSlim extracts inside lambdas)
 - [ ] In the plugin: long functions highlighted on the graphs, the split previewed as new functions and flows, first on code that already uses OfficeFloor

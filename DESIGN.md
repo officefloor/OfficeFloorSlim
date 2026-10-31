@@ -151,9 +151,10 @@ OfficeFloor column. Its shape, as built:
 - **Not slimmable:** its own reasons, chiefly loops and the values carried across edges,
   instead of SinewSlim's jumps: a loop or a single statement longer than the target, a try
   with resources or a finally, a switch whose cases fall through, more than 5 carried values in
-  every plan (SinewSlim's parameter limit, mirrored), or a jump crossing every cut. Loops,
-  `synchronized` and labeled statements and a lambda's body are never cut: a lambda runs inside
-  its call, not in a sequence OfficeFloor wires.
+  every plan (SinewSlim's parameter limit, mirrored; decided), or a jump crossing every cut.
+  Loops, `synchronized` and labeled statements and a lambda's body are never cut (decided,
+  before the study's runs are read): a lambda runs inside its call, not in a sequence
+  OfficeFloor wires.
 
 **The cost model** (all seven questions decided before any OfficeFloor figure was compared
 with a SinewSlim one, so the weights were not tuned after seeing which way they go: questions 1
