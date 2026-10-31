@@ -107,7 +107,9 @@ The Gradle projects are renamed to match the artifact names, so a composite buil
 them without a substitution block. The facts gain an extension point: a consumer adds its own
 extractors (annotations, try/catch structure, declared exceptions, non-Java files) without
 changing the shared schema, so OfficeFloorSlim can grow what it reads without breaking
-SinewSlim's parity with the study's `split.py`.
+SinewSlim's parity with the study's `split.py`. The schema itself is versioned, continuing the
+study's numbering (the facts are its live-width facts, schema 3), so a consumer can tell which
+facts it was given and SinewSlim can change them without silently breaking OfficeFloorSlim.
 
 SinewSlim keeps `Params.framework()` and the `framework:` configuration until
 OfficeFloorSlim's own algorithm exists, then removes them (or keeps them only as a rough

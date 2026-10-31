@@ -28,6 +28,7 @@ Before anything goes to Central, because a Central release cannot be deleted.
 - [ ] Move `MethodFacts`, `Stmt`, `StmtKind`, `Var`, `Jumps`, `MethodIndex`, `Seam` into `sinewslim-facts`; `sinewslim-core` depends on it
 - [ ] Move `RepoFiles`, `Scanner`, `Glob` out of `cli` into `sinewslim-scan`
 - [ ] Add the facts extension point: a consumer adds its own extractors (annotations, try/catch, declared exceptions, non-Java files) without changing the shared schema
+- [ ] Version the facts schema, continuing the study's numbering (schema 3)
 - [ ] Keep `split.py` parity and the full test suite green throughout
 - [ ] Leave `Params.framework()` in place; it goes in Phase 4
 - [ ] Update SinewSlim's `DESIGN.md` for the new modules
