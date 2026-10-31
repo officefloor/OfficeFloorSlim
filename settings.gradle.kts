@@ -17,3 +17,6 @@ for ((name, dir) in modules) {
     include(name)
     project(":$name").projectDir = file(dir)
 }
+
+// The OfficeFloor IntelliJ plugin: not a library, so not named as an artifact.
+include("intellij")

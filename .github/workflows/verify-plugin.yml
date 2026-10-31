@@ -1,0 +1,64 @@
+name: Verify plugin
+
+# The JetBrains Plugin Verifier: the plugin against each IDE of its build range
+# (2024.2 to the newest). The IDEs together do not fit on one runner's disk, so
+# each is verified in its own job. It runs when the plugin changes on main, on
+# demand, and from a release before the plugin goes to the Marketplace.
+on:
+  workflow_call:
+  push:
+    branches: [ main ]
+    paths:
+      - "intellij/src/main/**"
+      - "intellij/build.gradle.kts"
+      - "build.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/verify-plugin.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # the IDEs the platform recommends for sinceBuild 242 (IntellijIdea: the unified IDE from 2025.3)
+        ide:
+          - IC:2024.2.6
+          - IC:2024.3.7.1
+          - IC:2025.1.7.2
+          - IC:2025.2.6.3
+          - IntellijIdea:2025.3.6.1
+          - IntellijIdea:2026.1.5
+          - IntellijIdea:2026.2.3
+          - IntellijIdea:263.7307.44
+    name: verify ${{ matrix.ide }}
+    steps:
+      - name: Free disk space for the IDE
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+      - name: Check out
+        uses: actions/checkout@v5
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true    # the IDE is too big to be worth caching per version
+      - name: Verify the plugin
+        run: ./gradlew --console=plain :intellij:verifyPlugin -PverifyIde=${{ matrix.ide }}
+      - name: Keep the verifier's report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: plugin-verifier-${{ strategy.job-index }}
+          path: intellij/build/reports/pluginVerifier
+          if-no-files-found: ignore

@@ -1,0 +1,11 @@
+# Mirrors tutorials/native/core/VariableHttpServer. Open this in an IDE where the
+# tutorial's classes resolve, then toggle "Data flow": OutSet writes Person and
+# @Description String; InUse reads both -> two data-flow lines OutSet -> InUse.
+OutSet:
+  class: net.officefloor.tutorial.variablehttpserver.OutLogic
+  method: setValues
+  next: InUse
+
+InUse:
+  class: net.officefloor.tutorial.variablehttpserver.InLogic
+  method: useValues

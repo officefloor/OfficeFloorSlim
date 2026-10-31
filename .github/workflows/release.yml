@@ -1,0 +1,109 @@
+name: Release
+
+# Publishes the OfficeFloor plugin (intellij/) to the JetBrains Marketplace when a version tag
+# is pushed:
+#   git tag v0.2.0 && git push origin v0.2.0
+# The tag is the version: the plugin is built with -Pversion=0.2.0 (gradle.properties only
+# holds the development version). The plugin is already on the Marketplace (ID
+# net.officefloor.ide.rest.plugin, released from officefloor/OfficeFloor-IntelliJ-Plugin up to
+# 0.1.1), so a release from here is an update to it. The Docker image and the CLI join this
+# workflow in PLAN.md's Phase 7.
+#
+# Everything that could stop a release is checked before anything is published:
+# the secrets, the tag's form, the change notes, the tests, and the Plugin
+# Verifier on every IDE. Only then is the plugin signed and uploaded.
+
+on:
+  push:
+    tags: [ "v*.*.*" ]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check and test
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      # all four from the OfficeFloor organisation (setup-jetbrains-publishing.sh in
+      # officefloor/OfficeFloorMaintenance), which this repository can read only once it is
+      # listed in that repository's jetbrains-plugin-repositories.txt
+      - name: Check the publishing secrets
+        env:
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: |
+          missing=""
+          for name in PUBLISH_TOKEN CERTIFICATE_CHAIN PRIVATE_KEY PRIVATE_KEY_PASSWORD; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::missing secrets:$missing (nothing was published)"
+            exit 1
+          fi
+
+      - name: Take the version from the tag
+        id: version
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::tag $GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH (nothing was published)"
+            exit 1
+          fi
+          echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Check plugin.xml has change notes for the version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if ! grep -q "<b>$VERSION</b>" intellij/src/main/resources/META-INF/plugin.xml; then
+            echo "::error::plugin.xml has no change-notes entry <b>$VERSION</b> for the Marketplace (nothing was published)"
+            exit 1
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Test and build the plugin
+        run: ./gradlew --console=plain -Pversion=${{ steps.version.outputs.version }} :intellij:test :intellij:buildPlugin
+
+  verify-plugin:
+    needs: check
+    uses: ./.github/workflows/verify-plugin.yml
+
+  publish:
+    name: Publish to JetBrains Marketplace
+    needs: [ check, verify-plugin ]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Publish the plugin
+        env:
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew --console=plain -Pversion=${{ needs.check.outputs.version }} :intellij:publishPlugin

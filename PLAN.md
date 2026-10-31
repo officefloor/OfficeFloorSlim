@@ -63,14 +63,15 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 - [x] Composite build against `../SinewSlim` (see `DESIGN.md`, *Local development*); check that an edit in SinewSlim shows up in the next build here (all four resolve to its projects with no substitution block; a probe constant added there compiled and passed in a test here)
 - [ ] Open both in one IntelliJ workspace (by hand: opening this build imports `../SinewSlim` as its included build)
 - [ ] If an unreleased OfficeFloor is needed: `mvn install` in `~/OfficeFloor`, plus `mavenLocal()` restricted to `net.officefloor` snapshots (not needed yet: nothing here depends on OfficeFloor)
-- [ ] CI workflow that builds and tests (no publishing yet): `.github/workflows/ci.yml`, with SinewSlim's `central-libraries` checked out beside it until its libraries are on Central; ticked once its first run passes
+- [x] CI workflow that builds and tests (no publishing yet): `.github/workflows/ci.yml`, with SinewSlim's `central-libraries` checked out beside it until its libraries are on Central (first run 41217184669 passed)
 
 ## Phase 2b: bring the OfficeFloor plugin in
 
-- [ ] Copy `~/OfficeFloor-IntelliJ-Plugin` into `intellij/` as one commit (no history)
-- [ ] Keep the plugin ID `net.officefloor.ide.rest.plugin`, so everyone with 0.1.1 installed gets the update
-- [ ] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor"
-- [ ] Keep its signing and Marketplace publishing; move its release workflow across
+- [x] Copy `~/OfficeFloor-IntelliJ-Plugin` into `intellij/` as one commit (no history), from its 7bc06d4: sources, samples and README, its build folded into this one (`:intellij`, `-Pversion`), its 14 tests passing
+- [x] Keep the plugin ID `net.officefloor.ide.rest.plugin`, so everyone with 0.1.1 installed gets the update
+- [ ] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor" (`plugin.xml` says "OfficeFloor" now; the listing follows with the first release from here)
+- [x] Keep its signing and Marketplace publishing; move its release workflow across (`release.yml`, `verify-plugin.yml`, on `:intellij`)
+- [ ] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets
 - [ ] Expose the graph model (which classes and methods are wired as functions) to the classification
 - [ ] After the first release from here: archive the old repository with a pointer to this one
 

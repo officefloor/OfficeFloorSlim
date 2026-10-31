@@ -1,0 +1,33 @@
+composition:
+  escalations:
+    java.io.IOException: handleIoFailure
+
+service:
+  class: net.officefloor.sample.order.CreateOrderLogic
+  method: service
+  next: validate
+
+validate:
+  class: net.officefloor.sample.order.CreateOrderLogic
+  method: validate
+  outputs:
+    invalid: rejectOrder
+    valid: persist
+
+persist:
+  class: net.officefloor.sample.order.OrderRepository
+  method: store
+  next: confirmation
+  escalations:
+    net.officefloor.sample.order.DuplicateOrderException: rejectOrder
+
+confirmation:
+  class: net.officefloor.sample.order.CreateOrderLogic
+  method: confirmation
+
+rejectOrder:
+  class: net.officefloor.sample.order.CreateOrderLogic
+  method: reject
+
+handleIoFailure:
+  class: net.officefloor.sample.order.FailureLogic

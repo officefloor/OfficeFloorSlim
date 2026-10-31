@@ -1,0 +1,28 @@
+# A non-REST "activity" compose flow (opened directly, not under a rest/ dir).
+composition:
+  escalations:
+    java.lang.Exception: onError
+
+authorize:
+  class: net.officefloor.sample.payment.PaymentLogic
+  method: authorize
+  outputs:
+    approved: capture
+    declined: onDeclined
+
+capture:
+  class: net.officefloor.sample.payment.PaymentLogic
+  method: capture
+  next: receipt
+
+receipt:
+  class: net.officefloor.sample.payment.PaymentLogic
+  method: receipt
+  next: "#notify"
+
+onDeclined:
+  class: net.officefloor.sample.payment.PaymentLogic
+  method: declined
+
+onError:
+  class: net.officefloor.sample.payment.FailureLogic

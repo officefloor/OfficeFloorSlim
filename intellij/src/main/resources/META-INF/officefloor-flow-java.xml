@@ -1,0 +1,7 @@
+<idea-plugin>
+    <!--
+      Loaded only when the Java module is present (e.g. IntelliJ IDEA).
+      "Jump to Java class" is still graceful without it: the node simply
+      navigates within the configuration file instead.
+    -->
+</idea-plugin>

@@ -31,4 +31,4 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build and test
         working-directory: OfficeFloorSlim
-        run: ./gradlew --console=plain build
+        run: ./gradlew --console=plain build :intellij:buildPlugin
