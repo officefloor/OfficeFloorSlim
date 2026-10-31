@@ -91,25 +91,29 @@ Each arrow points from a part to what it depends on. Two rules hold:
 
 ### The shared libraries
 
-They are published from SinewSlim. Today SinewSlim's `core` holds both the facts and the
-search, and the scanning (`RepoFiles`, `Scanner`, `Glob`) lives in `cli`, which is never
-published. Before the first Central release SinewSlim is restructured:
+They are published from SinewSlim. Before the first Central release SinewSlim is restructured
+(done on its `central-libraries` branch, 555aafe), each module in its own package
+(`net.officefloor.sinewslim.facts`, `.core`, …):
 
 | Module | Holds | Taken from |
 |---|---|---|
-| `sinewslim-facts` | `MethodFacts`, `Stmt`, `StmtKind`, `Var`, `Jumps`, `MethodIndex`, `Seam` | `core` |
+| `sinewslim-facts` | `MethodFacts`, `Stmt`, `StmtKind`, `Var`, `Jumps`, `MethodIndex`, `Seam` (its roles only), `FactKey`, `ExtraFacts` | `core` |
 | `sinewslim-javaparser` | Facts from Java source, by JavaParser, syntax only | `javaparser` |
-| `sinewslim-scan` | Walking a repository, include and exclude | `cli` |
-| `sinewslim-core` | `Params`, `Search`, `Run`, `Slimmer`, `Assessor`, `SlimResult`, `Pieces`, `Binding` | `core` |
+| `sinewslim-scan` | `RepoFiles`, `Glob`, and a `Scanner` that reads the selected files in parallel with the caller's reader | `cli` |
+| `sinewslim-core` | `Params` (which now prices a seam), `Search`, `Run`, `Slimmer`, `Assessor`, `SlimResult`, `Pieces`, `Binding` | `core` |
 | `sinewslim-config` | `.sinew-slim.yml` | `config` |
 
-The Gradle projects are renamed to match the artifact names, so a composite build substitutes
-them without a substitution block. The facts gain an extension point: a consumer adds its own
-extractors (annotations, try/catch structure, declared exceptions, non-Java files) without
-changing the shared schema, so OfficeFloorSlim can grow what it reads without breaking
-SinewSlim's parity with the study's `split.py`. The schema itself is versioned, continuing the
-study's numbering (the facts are its live-width facts, schema 3), so a consumer can tell which
-facts it was given and SinewSlim can change them without silently breaking OfficeFloorSlim.
+The Gradle projects carry the artifact names (`:sinewslim-core`, in `core/`), so a composite
+build substitutes them without a substitution block. The facts have an extension point: a
+`JavaFacts.Extractor` reads a callable's syntax tree and returns one fact under its own
+`FactKey`, which `MethodUnit.extras()` carries beside the shared facts. So OfficeFloorSlim adds
+annotations, try/catch structure and declared exceptions without changing the shared schema,
+and without touching SinewSlim's parity with the study's `split.py`. Non-Java files are read
+through `sinewslim-scan` with OfficeFloorSlim's own reader. The schema is versioned,
+continuing the study's numbering (`MethodFacts.SCHEMA` = 3), so a consumer can tell which facts
+it was given and SinewSlim can change them without silently breaking OfficeFloorSlim. Since
+the seam's roles live in `sinewslim-facts` and its conventional price on `Params`, the
+OfficeFloor split reads the same seams and prices them its own way.
 
 SinewSlim keeps `Params.framework()` and the `framework:` configuration until
 OfficeFloorSlim's own algorithm exists, then removes them (or keeps them only as a rough
@@ -423,9 +427,8 @@ All development and integration happen on the local machine until they work. Onl
   }
   ```
 
-  Until SinewSlim's Gradle projects are renamed to their artifact names, `includeBuild` needs a
-  `dependencySubstitution` block mapping each `net.officefloor.sinewslim:sinewslim-*` module to
-  its project (`:core`, `:javaparser`, `:config`).
+  SinewSlim's library projects carry their artifact names, so `includeBuild` needs no
+  `dependencySubstitution` block.
 - **Checking as an outsider would:** `./gradlew publishToMavenLocal` in SinewSlim installs
   unsigned `0.0.0-SNAPSHOT` artifacts in `~/.m2`. Use it before a merge, not day to day.
 - **OfficeFloor itself** builds with Maven, which a composite build cannot include. If an

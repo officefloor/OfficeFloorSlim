@@ -38,20 +38,21 @@ SinewSlim's `main` (`build.gradle.kts`, `settings.gradle.kts`, the three modules
 - [x] Commit to a branch in SinewSlim, `central-libraries` (94e1277, pushed)
 - [ ] Optional: fill in the javadoc comments behind the ~98 warnings
 
-## Phase 1: restructure the SinewSlim libraries (in SinewSlim)
+## Phase 1: restructure the SinewSlim libraries (in SinewSlim; done, 555aafe on `central-libraries`, not pushed)
 
 Before anything goes to Central, because a Central release cannot be deleted. Build on
 SinewSlim's `central-libraries` branch, which holds the Phase 0 publishing setup; `main` does
 not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 
-- [ ] Rename the Gradle projects to their artifact names (`sinewslim-core`, …), so composite builds substitute them automatically
-- [ ] Move `MethodFacts`, `Stmt`, `StmtKind`, `Var`, `Jumps`, `MethodIndex`, `Seam` into `sinewslim-facts`; `sinewslim-core` depends on it
-- [ ] Move `RepoFiles`, `Scanner`, `Glob` out of `cli` into `sinewslim-scan`
-- [ ] Add the facts extension point: a consumer adds its own extractors (annotations, try/catch, declared exceptions, non-Java files) without changing the shared schema
-- [ ] Version the facts schema, continuing the study's numbering (schema 3)
-- [ ] Keep `split.py` parity and the full test suite green throughout
-- [ ] Leave `Params.framework()` in place; Phase 3 uses it as the stand-in for the OfficeFloor reading, and it goes in Phase 4
-- [ ] Update SinewSlim's `DESIGN.md` for the new modules
+- [x] Rename the Gradle projects to their artifact names (`sinewslim-core`, …), so composite builds substitute them automatically (directories keep their short names)
+- [x] Move `MethodFacts`, `Stmt`, `StmtKind`, `Var`, `Jumps`, `MethodIndex`, `Seam` into `sinewslim-facts`; `sinewslim-core` depends on it. Package `net.officefloor.sinewslim.facts`; `Seam` keeps its roles and `Params` prices it
+- [x] Move `RepoFiles`, `Scanner`, `Glob` out of `cli` into `sinewslim-scan`. `Scanner` takes the caller's reader; the CLI's assessment stays in `cli` as `HealthScan`
+- [x] Add the facts extension point: a consumer adds its own extractors (annotations, try/catch, declared exceptions, non-Java files) without changing the shared schema. `JavaFacts.Extractor` and `FactKey` into `MethodUnit.extras()`; non-Java files through `Scanner` with the consumer's reader
+- [x] Version the facts schema, continuing the study's numbering (schema 3): `MethodFacts.SCHEMA`
+- [x] Keep `split.py` parity and the full test suite green throughout (63 tests; parity on the committed subset)
+- [ ] Full `split.py` parity on the whole export (`export_split_golden.py`, all three sets; about an hour) before `central-libraries` merges to `main`
+- [x] Leave `Params.framework()` in place; Phase 3 uses it as the stand-in for the OfficeFloor reading, and it goes in Phase 4
+- [x] Update SinewSlim's `DESIGN.md` for the new modules
 
 ## Phase 2: this project's skeleton and local wiring
 
