@@ -36,6 +36,12 @@ class NormaliseTest(unittest.TestCase):
         self.assertEqual((2, 10, 4, 8), (p["checkpoints"], p["passing"], p["m1"], p["m2"]))
         self.assertEqual((0.4, 0.8), (p["m1n"], p["m2n"]))  # sum over sum, not a mean of ratios
 
+    def test_only_full_gates_count(self):
+        r = normalise.series({10: scan(10, 8, 1, 0), 11: scan(10, 8, 1, 0)},
+                             {10: capture(5, 0, scope="full"), 11: capture(1, 0, scope="checkpoint")})
+        self.assertEqual(5, r["pooled"]["passing"])
+        self.assertEqual([{"checkpoint": 11, "reason": "own spec only, not the full gate"}], r["excluded"])
+
     def test_no_passing_tests_is_no_ratio(self):
         r = normalise.series({1: scan(5, 5, 0, 0)}, {1: capture(0, 3)})
         self.assertIsNone(r["rows"][0]["m1n"])

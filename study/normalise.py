@@ -45,9 +45,11 @@ def captures(repo: str, branch: str) -> dict[int, dict]:
 
 
 def passing(capture: dict) -> int | None:
-    """The tests passing in the full gate; None when the gate was invalid or the app broken."""
+    """The tests passing in the full gate; None when the gate was invalid, the app broken, or only
+    the checkpoint's own spec ran (`scope` "checkpoint": the harness runs the full cp01..cpK suite
+    only every tenth checkpoint and at the last; a capture from before `scope` is a full one)."""
     t = capture.get("tests") or {}
-    if t.get("gate_invalid") or t.get("app_broken") or "results" not in t:
+    if t.get("gate_invalid") or t.get("app_broken") or "results" not in t or t.get("scope") == "checkpoint":
         return None
     return sum(1 for v in t["results"].values() if v is True)
 
@@ -64,7 +66,10 @@ def series(scans: dict[int, dict], caps: dict[int, dict]) -> dict:
         m = measures(scans[k])
         p = passing(caps[k]) if k in caps else None
         if p is None:
-            excluded.append({"checkpoint": k, "reason": "no capture" if k not in caps else "gate invalid or app broken"})
+            t = (caps.get(k) or {}).get("tests") or {}
+            excluded.append({"checkpoint": k, "reason": "no capture" if k not in caps
+                             else "own spec only, not the full gate" if t.get("scope") == "checkpoint"
+                             else "gate invalid or app broken"})
         elif p == 0:
             excluded.append({"checkpoint": k, "reason": "no test passing"})
         rows.append({"checkpoint": k, **m, "passing": p,

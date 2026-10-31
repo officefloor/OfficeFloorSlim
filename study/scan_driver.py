@@ -3,8 +3,9 @@
 docs/SINEWSLIM_ANALYSIS_PLAN.md, section 4).
 
 For one chain branch of the experiment, `evolve/<run>/<condition>/chain<N>`, it runs SinewSlim at
-every checkpoint commit (the harness's `cpNN reset` commit, the boundary it commits when checkpoint
-NN is complete) on the stack's backend Java only, and writes one JSON per checkpoint:
+every finished checkpoint on the stack's backend Java only, and writes one JSON per checkpoint. A
+checkpoint is finished when the harness has committed its `cpNN reset` boundary; what is measured
+is its `cpNN agent` commit, the code as the agent left it (the analysis plan, section 3):
 
     OUT/<run>/<condition>/chain<N>/cpNN.sinewslim.json   SinewSlim's scan, as it wrote it
     OUT/<run>/<condition>/chain<N>/cpNN.officefloorslim.json   OfficeFloorSlim's scan, with
@@ -41,6 +42,7 @@ from datetime import datetime, timezone
 
 BRANCH = re.compile(r"^(?:origin/)?evolve/([^/]+)/([^/]+)/chain(\d+)$")
 RESET = re.compile(r"^cp(\d+) reset ")
+AGENT = re.compile(r"^cp(\d+) agent ")
 WIRING_ROOT = "src/main/resources/officefloor/"
 DEFAULT_BACKEND = "src/main/java"
 
@@ -51,14 +53,17 @@ def git(repo: str, *args: str, binary: bool = False):
 
 
 def checkpoints(repo: str, branch: str) -> list[tuple[int, str]]:
-    """The (checkpoint, commit) of every `cpNN reset` commit on the branch, oldest first."""
-    out = []
+    """The (checkpoint, its `cpNN agent` commit) of every finished checkpoint on the branch (one
+    with a `cpNN reset` commit), oldest first. A checkpoint is measured at its first agent commit,
+    the code as the agent left it, before any refactor round."""
+    agent, finished = {}, set()
     for line in git(repo, "log", "--reverse", "--format=%H %s", branch).splitlines():
         sha, _, subject = line.partition(" ")
-        m = RESET.match(subject)
-        if m:
-            out.append((int(m.group(1)), sha))
-    return out
+        if m := AGENT.match(subject):
+            agent.setdefault(int(m.group(1)), sha)
+        elif m := RESET.match(subject):
+            finished.add(int(m.group(1)))
+    return [(k, agent[k]) for k in sorted(finished) if k in agent]
 
 
 def backend_root(repo: str, sha: str) -> tuple[str, str]:
@@ -87,7 +92,7 @@ def extract(repo: str, sha: str, root: str, into: str) -> int:
 
 def wiring(repo: str, sha: str, previous: str | None) -> dict:
     """W1-W3 at the commit: the OfficeFloor configuration's non-blank lines and files, and
-    whether the commits since the previous checkpoint changed it."""
+    whether it changed since the previous checkpoint's agent commit."""
     files = [f for f in git(repo, "ls-tree", "-r", "--name-only", sha, "--", WIRING_ROOT).splitlines() if f]
     lines = 0
     for f in files:

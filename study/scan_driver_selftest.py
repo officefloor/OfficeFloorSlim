@@ -90,6 +90,9 @@ class DriverTest(unittest.TestCase):
         self.assertEqual(0, self.run_driver())
         m = self.read("manifest.json")
         self.assertEqual([1, 2], [c["checkpoint"] for c in m["checkpoints"]])
+        log = subprocess.run(["git", "-C", self.repo, "log", "--format=%H %s"], capture_output=True, text=True).stdout
+        agents = {s.split(" ")[0]: h for h, _, s in (l.partition(" ") for l in log.splitlines()) if " agent " in s}
+        self.assertEqual([agents["cp01"], agents["cp02"]], [c["commit"] for c in m["checkpoints"]])  # the agent's
         self.assertEqual(["src/main/java/a/A.java", "src/main/java/a/B.java"],
                          self.read("cp02.sinewslim.json")["files"])  # no tests, paths as in the repository
         self.assertIn(self.config, self.read("cp01.sinewslim.json")["args"])
