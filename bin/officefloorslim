@@ -1,0 +1,12 @@
+#!/bin/sh
+# officefloorslim launcher: runs the jar beside it (lib/officefloorslim.jar in an install, the
+# build output in a checkout, the image's copy). Needs Java 17 or later on the PATH, or JAVA_HOME.
+here="$(cd "$(dirname "$0")" && pwd)"
+for jar in "$here/../lib/officefloorslim.jar" "$here/../cli/build/libs/officefloorslim.jar" "/opt/officefloorslim/officefloorslim.jar"; do
+  if [ -f "$jar" ]; then
+    if [ -n "$JAVA_HOME" ]; then java="$JAVA_HOME/bin/java"; else java=java; fi
+    exec "$java" $OFFICEFLOORSLIM_JAVA_OPTS -jar "$jar" "$@"
+  fi
+done
+echo "officefloorslim: cannot find officefloorslim.jar next to $0" >&2
+exit 1

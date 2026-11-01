@@ -1,17 +1,21 @@
 name: Release
 
-# Publishes the OfficeFloor plugin (intellij/) to the JetBrains Marketplace when a version tag
-# is pushed:
-#   git tag v0.2.0 && git push origin v0.2.0
-# The tag is the version: the plugin is built with -Pversion=0.2.0 (gradle.properties only
-# holds the development version). The plugin is already on the Marketplace (ID
-# net.officefloor.ide.rest.plugin, released from officefloor/OfficeFloor-IntelliJ-Plugin up to
-# 0.1.1), so a release from here is an update to it. The Docker image and the CLI join this
-# workflow in PLAN.md's Phase 7.
+# Releases OfficeFloorSlim when a version tag is pushed:
+#   git tag v0.1.0 && git push origin v0.1.0
+# The tag is the version: everything is built with -Pversion=0.1.0 (gradle.properties only holds
+# the development version). It releases:
+#   - the command line, officefloorslim.jar, on a GitHub Release;
+#   - the Docker image ghcr.io/officefloor/officefloorslim;
+#   - the OfficeFloor plugin (intellij/) to the JetBrains Marketplace (ID
+#     net.officefloor.ide.rest.plugin, released from officefloor/OfficeFloor-IntelliJ-Plugin up
+#     to 0.1.1, so a release from here is an update to it).
 #
-# Everything that could stop a release is checked before anything is published:
-# the secrets, the tag's form, the change notes, the tests, and the Plugin
-# Verifier on every IDE. Only then is the plugin signed and uploaded.
+# It builds on SinewSlim's libraries from Maven Central, at sinewslimVersion in gradle.properties:
+# SinewSlim is released first (DESIGN.md, Release), and this workflow refuses a snapshot.
+#
+# Everything that could stop a release is checked before anything is published: the secrets, the
+# tag's form, the SinewSlim version, the change notes, the build and every test, and the Plugin
+# Verifier on every IDE. Only then do the publishing jobs run.
 
 on:
   push:
@@ -22,7 +26,7 @@ permissions:
 
 jobs:
   check:
-    name: Check and test
+    name: Check, build and test
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -58,6 +62,14 @@ jobs:
       - name: Check out
         uses: actions/checkout@v5
 
+      - name: Check SinewSlim is a released version
+        run: |
+          v="$(sed -n 's/^sinewslimVersion=//p' gradle.properties)"
+          if [[ ! "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::sinewslimVersion is '$v', not a released version on Maven Central (nothing was published)"
+            exit 1
+          fi
+
       - name: Check plugin.xml has change notes for the version
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -76,15 +88,70 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Test and build the plugin
-        run: ./gradlew --console=plain -Pversion=${{ steps.version.outputs.version }} :intellij:test :intellij:buildPlugin
+      # no SinewSlim checkout beside it: the libraries come from Central, as a user's build would
+      - name: Build and test everything
+        run: ./gradlew --console=plain -Pversion=${{ steps.version.outputs.version }} build :intellij:buildPlugin
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: jar
+          path: cli/build/libs/officefloorslim.jar
+          if-no-files-found: error
 
   verify-plugin:
     needs: check
     uses: ./.github/workflows/verify-plugin.yml
 
-  publish:
-    name: Publish to JetBrains Marketplace
+  github-release:
+    name: The command line on a GitHub Release
+    needs: [ check, verify-plugin ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v8
+        with:
+          name: jar
+          path: cli/build/libs
+      - name: Release the jar
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" cli/build/libs/officefloorslim.jar --generate-notes --verify-tag
+
+  docker:
+    name: The Docker image
+    needs: [ check, verify-plugin ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/officefloor/officefloorslim
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ needs.check.outputs.version }}
+
+  marketplace:
+    name: The plugin to the JetBrains Marketplace
     needs: [ check, verify-plugin ]
     runs-on: ubuntu-latest
     steps:

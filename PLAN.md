@@ -97,7 +97,7 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 - [x] Keep the plugin ID `net.officefloor.ide.rest.plugin`, so everyone with 0.1.1 installed gets the update
 - [ ] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor" (`plugin.xml` says "OfficeFloor" now; the listing follows with the first release from here)
 - [x] Keep its signing and Marketplace publishing; move its release workflow across (`release.yml`, `verify-plugin.yml`, on `:intellij`)
-- [ ] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets
+- [ ] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets (added, 01574af there; the script is to run)
 - [x] Expose the graph model (which classes and methods are wired as functions) to the classification: `officefloorslim-graph` (`graph/`, package `net.officefloor.officefloorslim.graph`) holds the model and `ComposeGraph`, the YAML rules; the plugin reads by PSI, the scan by SnakeYAML (`ComposeYamlReader`), and `ReaderParityTest` checks they give the same graph on every sample
 - [ ] After the first release from here: archive the old repository with a pointer to this one
 
@@ -183,8 +183,8 @@ Resumed (1 November 2026): the bar is a reading, not a gate.
 
 Wired only once Phases 1–3 work locally. The first Central release of the libraries is 0.x.
 
-- [ ] SinewSlim `release.yml`: a `publishToMavenCentral` step, `-Pversion` from the tag, after build and test
-- [ ] Map the existing OfficeFloor secrets (`SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`) to the four `ORG_GRADLE_PROJECT_*` properties (`DESIGN.md`, *Release*)
-- [ ] Set them at the OfficeFloor organisation level by a `setup-central-publishing.sh` in OfficeFloorMaintenance
-- [ ] This repository's release: Docker image, CLI, and the plugin to the Marketplace with its existing signing and secrets
+- [x] SinewSlim `release.yml`: a `publishToMavenCentral` step, `-Pversion` from the tag, after build and test (20ba26d on `central-libraries`: a `maven-central` job; the deployment is published by hand in the Central Portal, RELEASING.md)
+- [x] Map the existing OfficeFloor secrets (`SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`) to the four `ORG_GRADLE_PROJECT_*` properties (`DESIGN.md`, *Release*)
+- [ ] Set them at the OfficeFloor organisation level by a `setup-central-publishing.sh` in OfficeFloorMaintenance (written, 800df70 there; to run by an owner: they are OfficeFloor's repository secrets today, which cannot be read or copied)
+- [x] This repository's release: Docker image, CLI, and the plugin to the Marketplace with its existing signing and secrets (`release.yml`; it builds on SinewSlim from Central and refuses a snapshot `sinewslimVersion`; the first release is 0.2.0 or later, above the plugin's 0.1.1)
 - [ ] Release order: SinewSlim tagged and on Central, version bumped here, then this repository tagged
