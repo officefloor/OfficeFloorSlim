@@ -26,6 +26,9 @@
 
     <change-notes><![CDATA[
         <ul>
+          <li><b>0.3.0</b>: No change to the plugin. The release adds the combined split to
+          OfficeFloorSlim's command line and image: functions where the flow divides, with
+          extracted methods inside them.</li>
           <li><b>0.2.1</b>: Renamed "OfficeFloor IoCC" (was "OfficeFloor REST View"), and now
           released from the OfficeFloorSlim repository (its 0.2.0 was not released to the
           Marketplace: the name "OfficeFloor" is already taken there). The flow diagram is read by the same rules
