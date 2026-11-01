@@ -5,3 +5,5 @@
 **/out
 *.iml
 .intellijPlatform
+# the plugin: not in the image, and its build downloads the IntelliJ Platform (settings.gradle.kts)
+intellij

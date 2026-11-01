@@ -20,5 +20,9 @@ for ((name, dir) in modules) {
     project(":$name").projectDir = file(dir)
 }
 
-// The OfficeFloor IntelliJ plugin: not a library, so not named as an artifact.
-include("intellij")
+// The OfficeFloor IntelliJ plugin: not a library, so not named as an artifact. Included only when
+// its directory is there: the Docker build leaves it out (.dockerignore), so the image's build
+// does not download the IntelliJ Platform (about a gigabyte) for a plugin it does not contain.
+if (file("intellij").isDirectory) {
+    include("intellij")
+}
