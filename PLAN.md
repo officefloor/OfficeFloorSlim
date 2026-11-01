@@ -51,11 +51,10 @@ A copy of an earlier version of this plan, with the architecture drawn, is the d
   Docker image released with its JSON contract documented. The plugin work and the AI migration
   carry on independently.
 
-## Phase 0: Central publishing setup (in SinewSlim; built, uncommitted)
+## Phase 0: Central publishing setup (in SinewSlim; done, released in 0.2.0)
 
-SinewSlim's Gradle build already publishes `core`, `javaparser` and `config` as
-`sinewslim-core`, `sinewslim-javaparser` and `sinewslim-config`. The changes are uncommitted on
-SinewSlim's `main` (`build.gradle.kts`, `settings.gradle.kts`, the three modules' build files).
+SinewSlim's Gradle build publishes its five libraries, `sinewslim-facts`, `-core`, `-javaparser`,
+`-config` and `-scan`, to Maven Central (0.2.0, 1 November 2026).
 
 - [x] Add `com.vanniktech.maven.publish` 0.37.0, the POM metadata and a local `staging` repository
 - [x] Dry run: `./gradlew -Pversion=0.2.0 publishAllPublicationsToStagingRepository` writes jar, sources, javadoc and POM per module to `build/staging-deploy`
@@ -64,7 +63,7 @@ SinewSlim's `main` (`build.gradle.kts`, `settings.gradle.kts`, the three modules
 - [x] Commit to a branch in SinewSlim, `central-libraries` (94e1277, pushed)
 - [ ] Optional: fill in the javadoc comments behind the ~98 warnings
 
-## Phase 1: restructure the SinewSlim libraries (in SinewSlim; done, 555aafe on `central-libraries`, not pushed)
+## Phase 1: restructure the SinewSlim libraries (in SinewSlim; done, merged to `main` and released in 0.2.0)
 
 Before anything goes to Central, because a Central release cannot be deleted. Build on
 SinewSlim's `central-libraries` branch, which holds the Phase 0 publishing setup; `main` does
@@ -76,7 +75,7 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 - [x] Add the facts extension point: a consumer adds its own extractors (annotations, try/catch, declared exceptions, non-Java files) without changing the shared schema. `JavaFacts.Extractor` and `FactKey` into `MethodUnit.extras()`; non-Java files through `Scanner` with the consumer's reader
 - [x] Version the facts schema, continuing the study's numbering (schema 3): `MethodFacts.SCHEMA`
 - [x] Keep `split.py` parity and the full test suite green throughout (63 tests; parity on the committed subset)
-- [ ] Full `split.py` parity on the whole export (`export_split_golden.py`, all three sets; about an hour) before `central-libraries` merges to `main`
+- [x] Full `split.py` parity before `central-libraries` merges to `main`: on seed 3, the open-source sample (decided: MLCQ and fontana are not needed), by `ci/parity-full.sh`. 1 November 2026, SinewSlim a127ec1 against the study's f23dc66: 187,285 long methods, 936,425 results compared, 0 mismatched (export about 3 h 40 min, replay 18 min)
 - [x] Leave `Params.framework()` in place; Phase 3 uses it as the stand-in for the OfficeFloor reading, and it goes in Phase 4
 - [x] Update SinewSlim's `DESIGN.md` for the new modules
 
@@ -89,15 +88,15 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 - [x] Composite build against `../SinewSlim` (see `DESIGN.md`, *Local development*); check that an edit in SinewSlim shows up in the next build here (all four resolve to its projects with no substitution block; a probe constant added there compiled and passed in a test here)
 - [ ] Open both in one IntelliJ workspace (by hand: opening this build imports `../SinewSlim` as its included build)
 - [ ] If an unreleased OfficeFloor is needed: `mvn install` in `~/OfficeFloor`, plus `mavenLocal()` restricted to `net.officefloor` snapshots (not needed yet: nothing here depends on OfficeFloor)
-- [x] CI workflow that builds and tests (no publishing yet): `.github/workflows/ci.yml`, with SinewSlim's `central-libraries` checked out beside it until its libraries are on Central (first run 41217184669 passed)
+- [x] CI workflow that builds and tests: `.github/workflows/ci.yml`; SinewSlim from Central since 0.2.0 (until then its `central-libraries` was checked out beside it)
 
 ## Phase 2b: bring the OfficeFloor plugin in
 
 - [x] Copy `~/OfficeFloor-IntelliJ-Plugin` into `intellij/` as one commit (no history), from its 7bc06d4: sources, samples and README, its build folded into this one (`:intellij`, `-Pversion`), its 14 tests passing
 - [x] Keep the plugin ID `net.officefloor.ide.rest.plugin`, so everyone with 0.1.1 installed gets the update
-- [ ] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor IoCC" (`plugin.xml` says so; the listing follows with 0.2.1. 0.2.0's upload as "OfficeFloor" was refused: the name is taken)
+- [x] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor IoCC": uploaded in 0.2.1 (1 November 2026), the listing renamed once JetBrains approves it. 0.2.0's upload as "OfficeFloor" was refused: the name is taken
 - [x] Keep its signing and Marketplace publishing; move its release workflow across (`release.yml`, `verify-plugin.yml`, on `:intellij`)
-- [x] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets (added, 01574af there; the script is to run)
+- [x] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets (added, 01574af there; run: 0.2.1 published with them)
 - [x] Expose the graph model (which classes and methods are wired as functions) to the classification: `officefloorslim-graph` (`graph/`, package `net.officefloor.officefloorslim.graph`) holds the model and `ComposeGraph`, the YAML rules; the plugin reads by PSI, the scan by SnakeYAML (`ComposeYamlReader`), and `ReaderParityTest` checks they give the same graph on every sample
 - [x] After the first release from here: archive the old repository with a pointer to this one (archived 1 November 2026, after 0.2.1)
 
@@ -163,7 +162,7 @@ Resumed (1 November 2026): the bar is a reading, not a gate.
 - [x] Tests from hand-written fact sets and fixture sources, as SinewSlim's: `OfficeFloorSplitTest`, 12 cases worked out by hand against the cost model
 - [ ] Re-run the study's scan with the real OfficeFloor column in place of the framework reading: the scan's column is the split now (`officefloorslim-scan/2`); the study's runs are still to come. Read so far (1 November 2026): on OfficeFloor itself category 3 falls from 12 to 8 (6.7% of 119), and on the pilot chain at cp250 from 3 to 0. Loops are the commonest block (82 of the 164 long methods with no plan on OfficeFloor), then long single statements: on the pilot, `recordPayment` is one 130-line `found.ifPresent(invoice -> {...})`, a lambda the split does not cut (SinewSlim extracts inside lambdas)
 - [ ] In the plugin: long functions highlighted on the graphs, the split previewed as new functions and flows, first on code that already uses OfficeFloor
-- [ ] In SinewSlim: remove `Params.framework()` and the `framework:` configuration
+- [x] In SinewSlim: remove `Params.framework()` and the `framework:` configuration (c226a64 there, released in 0.2.0; an old `framework:` key is ignored with a warning)
 
 ## Phase 5: wiring
 
@@ -185,6 +184,6 @@ Wired only once Phases 1–3 work locally. The first Central release of the libr
 
 - [x] SinewSlim `release.yml`: a `publishToMavenCentral` step, `-Pversion` from the tag, after build and test (20ba26d on `central-libraries`: a `maven-central` job; the deployment is published by hand in the Central Portal, RELEASING.md)
 - [x] Map the existing OfficeFloor secrets (`SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`) to the four `ORG_GRADLE_PROJECT_*` properties (`DESIGN.md`, *Release*)
-- [ ] Set them at the OfficeFloor organisation level by a `setup-central-publishing.sh` in OfficeFloorMaintenance (written, 800df70 there; to run by an owner: they are OfficeFloor's repository secrets today, which cannot be read or copied)
+- [x] Set them at the OfficeFloor organisation level by `setup-central-publishing.sh` in OfficeFloorMaintenance (run by the owner, with a signing key generated and registered by it; SinewSlim 0.2.0 published with them)
 - [x] This repository's release: Docker image, CLI, and the plugin to the Marketplace with its existing signing and secrets (`release.yml`; it builds on SinewSlim from Central and refuses a snapshot `sinewslimVersion`; the first release is 0.2.0 or later, above the plugin's 0.1.1)
-- [ ] Release order: SinewSlim tagged and on Central, version bumped here, then this repository tagged
+- [x] Release order: SinewSlim tagged and on Central, version bumped here, then this repository tagged (1 November 2026: SinewSlim 0.2.0, then OfficeFloorSlim 0.2.0 and 0.2.1)
