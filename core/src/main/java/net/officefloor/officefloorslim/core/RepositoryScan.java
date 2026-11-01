@@ -49,7 +49,9 @@ public final class RepositoryScan {
 	 * @param include       the globs of the files read
 	 * @param exclude       the globs of the files left out
 	 * @param threads       the threads that read and price
-	 * @param growthCommits the commits in the growth window ({@link Growth#DEFAULT_COMMITS})
+	 * @param growthCommits the commits in the growth window ({@link Growth#DEFAULT_COMMITS}); 0 for
+	 *                      no growth: none is read, and every growth and window count is null
+	 *                      (a shallow clone has no history to read it from)
 	 */
 	public record Options(List<String> include, List<String> exclude, int threads, int growthCommits) {
 
@@ -161,7 +163,7 @@ public final class RepositoryScan {
 		}
 		Wiring wiring = new Wiring(wiringFiles);
 
-		Growth history = Growth.of(root, options.growthCommits());
+		Growth history = options.growthCommits() > 0 ? Growth.of(root, options.growthCommits()) : null;
 		Map<String, String[]> blames = blames(history, results, options.threads());
 
 		List<Method> methods = new ArrayList<>();

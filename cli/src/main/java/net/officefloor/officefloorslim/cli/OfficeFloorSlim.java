@@ -66,6 +66,9 @@ public final class OfficeFloorSlim {
 				+ Growth.DEFAULT_COMMITS + ")")
 		int commits = Growth.DEFAULT_COMMITS;
 
+		@Option(names = "--no-growth", description = "Read no growth: for a clone without its history (a shallow one); growth is null in the report")
+		boolean noGrowth;
+
 		@Option(names = "--threads", description = "Threads (default: one per processor)")
 		int threads = Runtime.getRuntime().availableProcessors();
 
@@ -77,7 +80,7 @@ public final class OfficeFloorSlim {
 			}
 			Path root = repo.toAbsolutePath().normalize();
 			Options options = new Options(include == null ? RepositoryScan.DEFAULT_INCLUDE : include,
-					exclude == null ? RepositoryScan.DEFAULT_EXCLUDE : exclude, threads, commits);
+					exclude == null ? RepositoryScan.DEFAULT_EXCLUDE : exclude, threads, noGrowth ? 0 : commits);
 			Result r = RepositoryScan.scan(root, options);
 			String text = format.equals("json") ? JsonReport.write(r, version()) : MarkdownReport.write(r, version());
 			if (out == null) {

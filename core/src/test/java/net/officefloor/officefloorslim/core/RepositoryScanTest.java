@@ -89,6 +89,19 @@ class RepositoryScanTest {
 	}
 
 	@Test
+	void noGrowthReadsNoHistory() throws Exception {
+		write("src/main/java/a/Logic.java", "package a;\npublic class Logic {\n" + longMethod("service") + "}\n");
+		git("init", "-q");
+		git("add", "-A");
+		git("commit", "-q", "-m", "one");
+		Result r = RepositoryScan.scan(root, new Options(RepositoryScan.DEFAULT_INCLUDE, RepositoryScan.DEFAULT_EXCLUDE, 1, 0));
+		assertNull(r.methods().get(0).growth()); // a shallow clone's one commit is not a window
+		assertEquals(-1, r.measures().windowCommits());
+		assertEquals(-1, r.measures().touchingCommits());
+		assertNotNull(r.commit()); // the commit scanned is still recorded
+	}
+
+	@Test
 	void outsideGitThereIsNoGrowth() throws Exception {
 		write("src/main/java/a/Logic.java", "package a;\npublic class Logic {\n" + longMethod("service") + "}\n");
 		Result r = RepositoryScan.scan(root, Options.defaults());

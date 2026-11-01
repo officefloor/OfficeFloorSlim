@@ -43,7 +43,7 @@ common unit (DESIGN.md, *Comparing the two costs*).
 | Field | Meaning |
 |---|---|
 | `files`, `lines`, `functions`, `edges` | Configuration files (compose YAML, `.woof`, `application.officefloor`), their non-blank lines, the functions and flows they declare |
-| `window_commits` | Commits in the growth window (the last `growth_commits`, at most `growth_months` back); null outside git |
+| `window_commits` | Commits in the growth window (the last `growth_commits`, at most `growth_months` back); null outside git, or with `--no-growth` (`growth_commits` 0) |
 | `touching_commits` | Of those, the commits that changed a configuration file there now; null outside git |
 | `by_file` | Per file: `path`, `kind` (`compose_yaml`, `woof`, `officefloor`), `lines`, `functions`, `edges`, `wires` (the classes, and `class#method`, it wires) |
 
@@ -59,7 +59,7 @@ common unit (DESIGN.md, *Comparing the two costs*).
 | `officefloor` | The OfficeFloor split's plan (below) |
 | `category` | For a method SinewSlim cannot slim with one return per piece: `{number, label}`; else null |
 | `migration` | `fields` (touched: beans to bridge), `transactional`, `escalations` (exception types declared or caught), `functions` and `edges` of the split (null without a plan). Each in its own unit; never summed |
-| `growth` | `{lines_added, commits}` over the window, on its code lines, from `git blame` at `HEAD`; null outside git |
+| `growth` | `{lines_added, commits}` over the window, on its code lines, from `git blame` at `HEAD`; null outside git, or with `--no-growth` |
 
 ### `sinewslim`
 
