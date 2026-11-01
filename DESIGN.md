@@ -213,6 +213,87 @@ The split produces the functions as code **and** their wiring (the YAML, woof or
 configuration), applied as a refactoring in the IDE and checked by reading the facts again and
 comparing them with the plan.
 
+### The combined split (`officefloorslim-split/2`; proposed 1 November 2026, questions 8 to 11 open)
+
+`split/1` splits by function injection alone, which no OfficeFloor developer would do. An
+OfficeFloor function is an ordinary Java method: it can call private methods of its own. Wiring
+a loop body, or a ten-line calculation, through the YAML as functions and flows costs more
+wiring than it saves, and `split/1` is blocked outright by any loop or lambda longer than the
+target (82 of its 164 failures on OfficeFloor's own code are loops). The combined split does
+what a developer would: functions where the flow divides, helper methods inside them.
+
+- **Two levels.** The outer search is `split/1`'s: the method's statements partitioned into
+  functions, flows, decisions and escalations, by the same dynamic program and the same cost
+  model (questions 1 to 7). The inner search is SinewSlim's: a function whose body is over the
+  target is handed to SinewSlim's search as a method of its own (its statements; its parameters
+  the values it declares), under SinewSlim's defaults.
+- **What changes in the outer search.** A function no longer has to be at or under the target
+  itself; it has to be at or under it **after its own extractions**. So a loop, a lambda, or a
+  long statement is no longer a reason the whole method fails: it stays whole inside one
+  function, and SinewSlim extracts within it, as it does in conventional code. Loops and lambda
+  bodies are still never cut *between functions* (that decision stands).
+- **The plan** lists each function as `split/1` does, and under it the pieces SinewSlim
+  extracts from it, each in SinewSlim's own terms (inputs, outputs, cost):
+
+  ```
+  function 30-47   18 lines   declares: request, config    produces: query     seam 0
+  function 48-90   41 lines   declares: query*, config     produces: -         seam 1
+    piece  55-70   16 lines   in: query, config  out: rows                    seam 3
+  2 functions, 1 edge, 1 piece   worst seam 3
+  injection cost (0+1) + (1+1) + 1 = 4      extraction cost 3 (SinewSlim's)
+  ```
+
+- **Two totals, never added.** The injection total (seams, functions, edges, as now) and the
+  extraction total (SinewSlim's slim cost of every piece, by SinewSlim's `Params.cost`) are
+  reported side by side, as the two columns are (*Comparing the two costs*). The plan carries
+  both; nothing turns one into the other.
+- **One function is always a candidate.** The whole method as a single function, slimmed by
+  SinewSlim inside it, is SinewSlim's own plan plus a function around it. So wherever
+  SinewSlim slims a method with one return per piece, the combined split has a plan, and its
+  worst seam is never larger than SinewSlim's. Two consequences, to be stated wherever its
+  figures are read:
+  - **Injection is credited only where it is used:** a plan of two or more functions. A
+    one-function plan is reported as `extraction_only`, and counts as SinewSlim's, not
+    OfficeFloor's.
+  - **"Never worse" is by construction, not a finding.** The comparison that means something
+    is how often injection is chosen and lowers the worst seam (*improves*), and for which
+    stuck methods it is the only plan (category 3).
+- **Reported beside `split/1`, not instead of it.** The scan's JSON keeps `split/1`'s plan and
+  adds `split/2`'s, so a reader sees how much of the reach is injection's own and how much the
+  helper methods inside functions. The categories (*Comparing the two costs*) are computed
+  under each, labelled with the reading.
+- **Built in OfficeFloorSlim, on SinewSlim 0.2.0 as released.** The inner search needs facts
+  for a statement range as a method of its own: its statements, with the values it declares
+  as parameters and what it produces as returns. Those are built here from the published facts
+  schema (schema 3) and passed to SinewSlim's released search, so SinewSlim needs no change
+  and no release. The inner search runs only for runs over the target, and once per run
+  (memoised), so the outer search's cost grows by one SinewSlim search per long run.
+
+**Its cost-model questions** (open: to be decided before any `split/2` figure is read, as 1 to
+7 were; each with the suggested answer):
+
+8. **Can an extracted piece span a function boundary?** Suggested: **no.** A piece is a private
+   method called by one function; a span across functions would be a function itself, and is
+   the outer search's to find.
+9. **What a function's declared values are, inside it.** Suggested: **its parameters, priced
+   as SinewSlim prices any method's parameters under its defaults** (`freeParams` off: a
+   parameter handed on to a piece costs, as an input). Injection makes a value free to the
+   function, not to the helpers it calls, which a developer still passes by hand. This is the
+   conservative choice, and keeps the inner search exactly SinewSlim's.
+10. **A function body SinewSlim cannot slim.** Suggested: **that cut is infeasible**, and the
+    outer search tries the others; if none is left, the method is not slimmable under
+    `split/2`, with the outer reason (as `split/1`'s) and SinewSlim's reason for the body that
+    blocked it. A body counts as slimmed only as SinewSlim's `slimmable` (one return per piece),
+    not `slimmable_with_record`: the same line as the stuck definition, so a record cannot
+    enter the OfficeFloor column by the back door.
+11. **The selection order across the two levels.** Suggested: **the smallest worst seam over
+    both kinds** (an injection seam and an extraction seam both count values crossing a
+    boundary, and are read as equal), **then the fewest parts** (functions plus pieces), **then
+    the smallest injection total, then the smallest extraction total.** Comparing worst seams
+    across kinds is the one place the two models meet, and it is needed to choose at all;
+    ordering the injection total before the extraction total prefers less wiring, which favours
+    the conventional shape on a tie, the reading least favourable to OfficeFloor.
+
 ## Comparing the two costs
 
 The two costs count different things: SinewSlim counts parameters and returns; OfficeFloor
@@ -499,6 +580,11 @@ reusing the libraries in their own frameworks.
 ## Open questions
 
 - Where to publish the study's results.
+- The combined split's cost-model questions 8 to 11 (*The combined split*), before any
+  `split/2` figure is read; and whether `long-method-slim-study` registers on `split/2`, with
+  its hypotheses restated for it (proposed: rescue, category 3 under `split/2` as a share of
+  the stuck methods, read against the quarter; improvement, where both have a plan, how often
+  the combined split's worst seam is lower than SinewSlim's).
 
 Decided on 31 October 2026, and recorded in the sections above: the Maven group
 (`net.officefloor.sinewslim` for both), no Central libraries from this project, the plugin
