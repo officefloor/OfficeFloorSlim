@@ -170,7 +170,7 @@ Resumed (1 November 2026): the bar is a reading, not a gate.
 - [x] Decide whether `split/1` should stop charging an early `return` in the method's last function a flow (it goes where falling off the end goes): left as released (decided 1 November 2026). It overcharges OfficeFloor slightly, so cannot flatter it; the study's plan states it. `split/2` does not charge it for the method as one function
 - [x] In the plugin: long functions highlighted on the graphs, the split previewed (2 November 2026): a function whose method is 26 code lines or more has an amber outline and its length as a badge; hovering it, or clicking the badge to pin it, opens a card with SinewSlim's verdict and the combined split's functions and the methods extracted inside them, each row going to its line. Priced by `MethodSplit` in the core, so the card is what `officefloorslim scan` reports; the method found by its class and name (an overloaded name is left unmarked)
 - [ ] The split previewed as new functions and flows drawn on the graph itself, not only listed in the card
-- [ ] Try the preview in a running IDE on a real OfficeFloor project (`./gradlew :intellij:runIde`); checked so far by its tests and an off-screen paint (`SplitPreviewPaintTest`, `intellij/build/split-preview.png`)
+- [x] Try the preview in a running IDE on a real OfficeFloor project (the user, 2 November 2026: "Looks good"; released in 0.4.0) (`./gradlew :intellij:runIde`); checked so far by its tests and an off-screen paint (`SplitPreviewPaintTest`, `intellij/build/split-preview.png`)
 - [x] In SinewSlim: remove `Params.framework()` and the `framework:` configuration (c226a64 there, released in 0.2.0; an old `framework:` key is ignored with a warning)
 
 ## Phase 5: wiring
