@@ -26,6 +26,11 @@
 
     <change-notes><![CDATA[
         <ul>
+          <li><b>0.4.0</b>: Long functions marked on the flow diagram. A function whose method is
+          26 code lines or more has an amber outline and its length as a badge. Hover it, or click
+          the badge to keep it open, to preview how it splits: into functions where the flow
+          divides, with any methods to extract inside them, and what each costs. Each row goes to
+          its line in the source. The "Long functions" check box turns it off.</li>
           <li><b>0.3.0</b>: No change to the plugin. The release adds the combined split to
           OfficeFloorSlim's command line and image: functions where the flow divides, with
           extracted methods inside them.</li>
