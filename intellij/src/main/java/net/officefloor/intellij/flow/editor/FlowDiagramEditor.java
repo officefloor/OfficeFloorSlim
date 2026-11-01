@@ -205,13 +205,18 @@ public class FlowDiagramEditor extends UserDataHolderBase implements FileEditor 
 				// A single click goes to the implementing Java method; a double click
 				// (preferYaml) goes to the YAML. Each falls back to the other when its
 				// preferred target is unavailable (e.g. HTTP endpoints have no method).
-				if (!preferYaml && node.hasJavaTarget() && navigateToJava(node)) {
-					return;
-				}
-				if (node.getSourceOffset() >= 0) {
+				Runnable yaml = () -> {
+					if (node.getSourceOffset() >= 0) {
+						navigateToYaml(node.getSourceOffset());
+					}
+				};
+				if (!preferYaml && node.hasJavaTarget()) {
+					navigateToJava(node, yaml);
+				} else if (node.getSourceOffset() >= 0) {
 					navigateToYaml(node.getSourceOffset());
 				} else if (node.hasJavaTarget()) {
-					navigateToJava(node);
+					navigateToJava(node, () -> {
+					});
 				}
 			}
 
@@ -319,12 +324,16 @@ public class FlowDiagramEditor extends UserDataHolderBase implements FileEditor 
 		new OpenFileDescriptor(this.project, this.file, offset).navigate(true);
 	}
 
-	private boolean navigateToJava(FlowNode node) {
+	/**
+	 * Goes to the node's Java method, found off the EDT; {@code otherwise} when there is none, or
+	 * the Java module is not present.
+	 */
+	private void navigateToJava(FlowNode node, Runnable otherwise) {
 		try {
-			return JavaTargetNavigator.navigate(this.project, node.getJavaClassName(), node.getJavaMethodName());
+			JavaTargetNavigator.navigateAsync(this.project, node.getJavaClassName(), node.getJavaMethodName(), otherwise);
 		} catch (Throwable ignored) {
-			// Java module not present; caller falls back to YAML navigation.
-			return false;
+			// Java module not present: the fallback
+			otherwise.run();
 		}
 	}
 
