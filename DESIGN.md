@@ -213,7 +213,7 @@ The split produces the functions as code **and** their wiring (the YAML, woof or
 configuration), applied as a refactoring in the IDE and checked by reading the facts again and
 comparing them with the plan.
 
-### The combined split (`officefloorslim-split/2`; proposed 1 November 2026, question 11 decided, 8 to 10 open)
+### The combined split (`officefloorslim-split/2`; designed 1 November 2026, questions 8 to 11 decided)
 
 `split/1` splits by function injection alone, which no OfficeFloor developer would do. An
 OfficeFloor function is an ordinary Java method: it can call private methods of its own. Wiring
@@ -274,18 +274,18 @@ what a developer would: functions where the flow divides, helper methods inside 
   and no release. The inner search runs only for runs over the target, and once per run
   (memoised), so the outer search's cost grows by one SinewSlim search per long run.
 
-**Its cost-model questions** (open: to be decided before any `split/2` figure is read, as 1 to
-7 were; each with the suggested answer):
+**Its cost-model questions** (all four decided on 1 November 2026, before any `split/2` figure
+existed, as 1 to 7 were before any `split/1` figure was compared):
 
-8. **Can an extracted piece span a function boundary?** Suggested: **no.** A piece is a private
+8. **Can an extracted piece span a function boundary? (decided)** **No.** A piece is a private
    method called by one function; a span across functions would be a function itself, and is
    the outer search's to find.
-9. **What a function's declared values are, inside it.** Suggested: **its parameters, priced
+9. **What a function's declared values are, inside it (decided).** **Its parameters, priced
    as SinewSlim prices any method's parameters under its defaults** (`freeParams` off: a
    parameter handed on to a piece costs, as an input). Injection makes a value free to the
    function, not to the helpers it calls, which a developer still passes by hand. This is the
    conservative choice, and keeps the inner search exactly SinewSlim's.
-10. **A function body SinewSlim cannot slim.** Suggested: **that cut is infeasible**, and the
+10. **A function body SinewSlim cannot slim (decided).** **That cut is infeasible**, and the
     outer search tries the others; if none is left, the method is not slimmable under
     `split/2`, with the outer reason (as `split/1`'s) and SinewSlim's reason for the body that
     blocked it. A body counts as slimmed only as SinewSlim's `slimmable` (one return per piece),
@@ -587,11 +587,10 @@ reusing the libraries in their own frameworks.
 ## Open questions
 
 - Where to publish the study's results.
-- The combined split's cost-model questions 8 to 10 (*The combined split*), before any
-  `split/2` figure is read; and whether `long-method-slim-study` registers on `split/2`, with
-  its hypotheses restated for it (proposed: rescue, category 3 under `split/2` as a share of
-  the stuck methods, read against the quarter; improvement, where both have a plan, how often
-  the combined split's worst seam is lower than SinewSlim's).
+- Whether `long-method-slim-study` registers on `split/2`, with its hypotheses restated for it
+  (proposed: rescue, category 3 under `split/2` as a share of the stuck methods, read against
+  the quarter; improvement, where SinewSlim also has a plan, how often the combined split
+  chooses injection and lowers the total).
 
 Decided on 31 October 2026, and recorded in the sections above: the Maven group
 (`net.officefloor.sinewslim` for both), no Central libraries from this project, the plugin
