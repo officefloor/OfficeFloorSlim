@@ -50,6 +50,14 @@ class OfficeFloorSplitTest {
 		return p.functions().stream().map(Function::kind).collect(Collectors.toList());
 	}
 
+	/** The plan's flows as "from>to KIND", the method's end as "end". */
+	static java.util.Set<String> links(Plan p) {
+		return p.links().stream()
+				.map(l -> l.from() + ">" + (l.to() == OfficeFloorSplit.Link.END ? "end" : String.valueOf(l.to())) + " "
+						+ l.kind())
+				.collect(Collectors.toSet());
+	}
+
 	static int total(Plan p) {
 		return p.functions().stream().mapToInt(Function::seam).sum() + p.functions().size() + p.edges();
 	}
@@ -67,9 +75,18 @@ class OfficeFloorSplitTest {
 		assertEquals(List.of(Kind.RUN, Kind.RUN), kinds(p));
 		assertEquals(List.of(List.of(), List.of("s")), p.functions().stream().map(Function::declares).toList());
 		assertEquals(1, p.edges());
+		assertEquals(java.util.Set.of("0>1 NEXT"), links(p));
 		assertEquals(1, p.worstSeam());
 		assertEquals((0 + 1) + (1 + 1) + 1, p.total());
 		assertEquals(p.total(), total(p));
+	}
+
+	@Test
+	void theLastFunctionFlowsOnPastTheMethod() {
+		// no return at the end: the last function's flow leaves the method, to whatever follows it
+		Plan p = plan(lines("System.out.println(a + #);", 40));
+		assertEquals(java.util.Set.of("0>1 NEXT"), links(p));
+		assertEquals(List.of(1), p.outs());
 	}
 
 	@Test
@@ -106,6 +123,8 @@ class OfficeFloorSplitTest {
 		// the first run's returns are early: one flow to the end, and one edge on to the second run;
 		// the second ends the method itself, so its own guards need no flow
 		assertEquals(2, p.edges());
+		assertEquals(java.util.Set.of("0>end RETURN", "0>1 NEXT"), links(p));
+		assertEquals(List.of(), p.outs());
 		assertEquals(p.total(), total(p));
 	}
 
@@ -119,6 +138,9 @@ class OfficeFloorSplitTest {
 		assertEquals(List.of(Kind.RUN, Kind.DECISION, Kind.RUN, Kind.RUN, Kind.RUN), kinds(p));
 		// run -> decision, decision -> then, decision -> else, then -> tail, else -> tail (question 4)
 		assertEquals(5, p.edges());
+		assertEquals(java.util.Set.of("0>1 NEXT", "1>2 FLOW", "1>3 FLOW", "2>4 NEXT", "3>4 NEXT"), links(p));
+		assertEquals(List.of(), p.outs()); // the tail returns: nothing flows on past the method's end
+		assertEquals(List.of(4), p.returns()); // but its return is the method's, on to what follows it
 		assertEquals(List.of(List.of(), List.of(), List.of("s"), List.of("s"), List.of("s")),
 				p.functions().stream().map(Function::declares).toList());
 		assertEquals(3 + 5 + 5, p.total());
@@ -143,6 +165,8 @@ class OfficeFloorSplitTest {
 		assertEquals(Kind.DECISION, without.functions().get(1).kind());
 		// without: run->decision, two cases, two joins, and the decision's own flow to the join
 		assertEquals(6, without.edges());
+		assertEquals(java.util.Set.of("0>1 NEXT", "1>2 FLOW", "1>3 FLOW", "2>4 NEXT", "3>4 NEXT", "1>4 NEXT"),
+				links(without));
 		// with a default: three cases, three joins, no flow straight to the join
 		assertEquals(7, with.edges());
 		assertEquals(with.functions().size(), without.functions().size() + 1);
@@ -169,6 +193,8 @@ class OfficeFloorSplitTest {
 		// before -> body, body 1 -> body 2, the escalation's two edges (one per exception type,
 		// question 5), body -> after, handler -> after
 		assertEquals(6, p.edges());
+		// the escalation drawn once, from the try's first function, though it costs an edge per type
+		assertEquals(java.util.Set.of("0>1 NEXT", "1>2 NEXT", "1>3 ESCALATION", "2>4 NEXT", "3>4 NEXT"), links(p));
 		assertEquals((0 + 1 + 1 + 1 + 1) + 5 + 6, p.total());
 	}
 

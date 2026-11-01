@@ -142,6 +142,21 @@ final class JsonReport {
 					.put("lines", f.lines());
 			f.declares().forEach(fo.putArray("declares")::add);
 		}
+		links(o, p);
+	}
+
+	/** The plan's flows, function to function by index; {@code to} null for the method's end. */
+	static void links(ObjectNode o, OfficeFloorSplit.Plan p) {
+		ArrayNode links = o.putArray("links");
+		for (OfficeFloorSplit.Link l : p.links()) {
+			ObjectNode lo = links.addObject().put("from", l.from());
+			if (l.to() == OfficeFloorSplit.Link.END) {
+				lo.putNull("to");
+			} else {
+				lo.put("to", l.to());
+			}
+			lo.put("kind", l.kind().name().toLowerCase());
+		}
 	}
 
 	static void bar(ObjectNode bar, RepositoryScan.Bar b) {
@@ -200,6 +215,7 @@ final class JsonReport {
 				fo.put("remainder", in.remainder()).put("extraction", in.cost());
 			}
 		}
+		links(o, p);
 	}
 
 	/** A count, or null when it is not known (-1). */

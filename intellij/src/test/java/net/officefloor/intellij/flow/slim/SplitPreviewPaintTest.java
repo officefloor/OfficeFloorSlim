@@ -58,6 +58,7 @@ public class SplitPreviewPaintTest {
 		Graphics2D g = image.createGraphics();
 		panel.paint(g);
 		g.dispose();
+		// pinned, the long function is drawn split: its two proposed functions in its place
 		File out = new File("build/split-preview.png");
 		ImageIO.write(image, "png", out);
 		assertTrue(out.length() > 0);

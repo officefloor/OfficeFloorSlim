@@ -32,10 +32,13 @@ import javax.swing.JPanel;
 
 import com.intellij.ui.JBColor;
 
+import net.officefloor.intellij.flow.layout.LayeredLayout;
 import net.officefloor.intellij.flow.layout.LayoutResult;
 import net.officefloor.intellij.flow.layout.NodeBounds;
 import net.officefloor.intellij.flow.slim.SlimEnricher.NodeSlim;
 import net.officefloor.intellij.flow.slim.SplitCard;
+import net.officefloor.intellij.flow.slim.SplitGraph;
+import net.officefloor.intellij.flow.slim.SplitGraph.Ghost;
 import net.officefloor.officefloorslim.graph.DataFlowLink;
 import net.officefloor.officefloorslim.graph.FlowGraph;
 import net.officefloor.officefloorslim.graph.FlowLink;
@@ -69,8 +72,14 @@ public class FlowDiagramPanel extends JPanel {
 		}
 	}
 
-	private final FlowGraph graph;
-	private final LayoutResult layout;
+	/** The graph as configured, and its layout. */
+	private final FlowGraph baseGraph;
+	private final LayoutResult baseLayout;
+	/** The graph drawn: the configured one, with any expanded long function's split in its place. */
+	private FlowGraph graph;
+	private LayoutResult layout;
+	/** The proposed functions drawn, by node id. */
+	private Map<String, Ghost> ghosts = Map.of();
 	private NavigationListener navigationListener;
 
 	/** Paths of the most recently painted links, for click hit-testing (model coords). */
@@ -138,6 +147,8 @@ public class FlowDiagramPanel extends JPanel {
 	}
 
 	public FlowDiagramPanel(FlowGraph graph, LayoutResult layout) {
+		this.baseGraph = graph;
+		this.baseLayout = layout;
 		this.graph = graph;
 		this.layout = layout;
 		this.setBackground(JBColor.background());
@@ -162,10 +173,7 @@ public class FlowDiagramPanel extends JPanel {
 					}
 					String badge = badgeAt(e.getPoint());
 					if (badge != null) {
-						if (!FlowDiagramPanel.this.pinned.remove(badge)) {
-							FlowDiagramPanel.this.pinned.add(badge);
-						}
-						repaint();
+						togglePinned(badge);
 						return;
 					}
 					if (cardAt(e.getPoint()) != null) {
@@ -183,6 +191,14 @@ public class FlowDiagramPanel extends JPanel {
 					}
 				}
 				FlowNode node = nodeAt(e.getPoint());
+				Ghost ghost = node == null ? null : FlowDiagramPanel.this.ghosts.get(node.getId());
+				if (ghost != null && !preferYaml) {
+					NodeSlim slim = FlowDiagramPanel.this.slims.get(ghost.origin());
+					if (slim != null) {
+						FlowDiagramPanel.this.navigationListener.onJavaLine(slim, ghost.function().lo());
+						return;
+					}
+				}
 				if (node != null) {
 					FlowDiagramPanel.this.navigationListener.onNode(node, preferYaml);
 					return;
@@ -201,6 +217,9 @@ public class FlowDiagramPanel extends JPanel {
 				if (card != null) {
 					// over a card: its function stays hovered, so the card stays open
 					FlowNode owner = FlowDiagramPanel.this.graph.getNode(card);
+					if (owner == null) {
+						owner = FlowDiagramPanel.this.graph.getNode(SplitGraph.ghostId(card, 0));
+					}
 					if (owner != FlowDiagramPanel.this.hovered && !FlowDiagramPanel.this.pinned.contains(card)) {
 						FlowDiagramPanel.this.hovered = owner;
 						repaint();
@@ -213,7 +232,10 @@ public class FlowDiagramPanel extends JPanel {
 				}
 				if (FlowDiagramPanel.this.showSplits && badgeAt(e.getPoint()) != null) {
 					setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-					setToolTipText("Click to keep this function's split open");
+					String b = badgeAt(e.getPoint());
+					setToolTipText(FlowDiagramPanel.this.ghosts.containsKey(SplitGraph.ghostId(b, 0))
+							? "Click to put the function back as it is"
+							: "Click to show this function split on the graph");
 					return;
 				}
 				Chip chip = chipsVisible() ? chipAt(e.getPoint()) : null;
@@ -289,12 +311,41 @@ public class FlowDiagramPanel extends JPanel {
 	/** Each function's method, priced; replaces any earlier. */
 	public void setSlims(Map<String, NodeSlim> slims) {
 		this.slims = slims == null ? Map.of() : Map.copyOf(slims);
-		this.repaint();
+		this.rebuildView();
 	}
 
 	public void setShowSplits(boolean showSplits) {
 		this.showSplits = showSplits;
+		this.rebuildView();
+	}
+
+	/**
+	 * The graph to draw: the configured one, with each pinned long function that splits into
+	 * functions replaced by them, laid out again.
+	 */
+	private void rebuildView() {
+		SplitGraph.View view = SplitGraph.expand(this.baseGraph, this.slims, this.showSplits ? this.pinned : Set.of());
+		this.graph = view.graph();
+		this.ghosts = view.ghosts();
+		this.layout = this.graph == this.baseGraph ? this.baseLayout : new LayeredLayout().layout(this.graph);
+		if (this.hovered != null && !this.graph.hasNode(this.hovered.getId())) {
+			this.hovered = null;
+		}
+		this.updatePreferredSize();
+		this.revalidate();
 		this.repaint();
+	}
+
+	/** The long function a node is, or was split from. */
+	private String origin(String nodeId) {
+		Ghost g = this.ghosts.get(nodeId);
+		return g == null ? nodeId : g.origin();
+	}
+
+	/** Where a function's card hangs: its node, or once split, its first function. */
+	private NodeBounds anchor(String origin) {
+		NodeBounds b = this.layout.boundsFor(origin);
+		return b != null ? b : this.layout.boundsFor(SplitGraph.ghostId(origin, 0));
 	}
 
 	public boolean isShowSplits() {
@@ -306,12 +357,12 @@ public class FlowDiagramPanel extends JPanel {
 		if (!this.pinned.remove(nodeId)) {
 			this.pinned.add(nodeId);
 		}
-		this.repaint();
+		this.rebuildView();
 	}
 
 	/** The long function's pricing for a node; null when it is not long or not known. */
 	private NodeSlim longSlim(String nodeId) {
-		NodeSlim s = this.slims.get(nodeId);
+		NodeSlim s = this.slims.get(origin(nodeId));
 		return s != null && s.split().longMethod() ? s : null;
 	}
 
@@ -439,6 +490,12 @@ public class FlowDiagramPanel extends JPanel {
 	}
 
 	private String tooltip(FlowNode node) {
+		Ghost ghost = this.ghosts.get(node.getId());
+		if (ghost != null) {
+			return "<html><b>Proposed function " + (ghost.index() + 1) + " of " + ghost.of() + "</b>, split from <i>"
+					+ escape(ghost.origin()) + "</i><br/>" + escape(node.getSubtitle())
+					+ "<br/>Click to go to its first line</html>";
+		}
 		StringBuilder sb = new StringBuilder("<html><b>").append(escape(node.getTitle())).append("</b>");
 		if (!node.getSubtitle().isEmpty()) {
 			sb.append("<br/>").append(escape(node.getSubtitle()));
@@ -511,9 +568,15 @@ public class FlowDiagramPanel extends JPanel {
 
 			// Split cards on top of everything: the pinned ones, and the hovered function's.
 			if (this.showSplits) {
-				Set<String> open = new LinkedHashSet<>(this.pinned);
+				// a pinned function shown split keeps its card closed until hovered: the graph shows it
+				Set<String> open = new LinkedHashSet<>();
+				for (String id : this.pinned) {
+					if (!this.ghosts.containsKey(SplitGraph.ghostId(id, 0))) {
+						open.add(id);
+					}
+				}
 				if (this.hovered != null) {
-					open.add(this.hovered.getId());
+					open.add(origin(this.hovered.getId()));
 				}
 				for (String id : open) {
 					NodeSlim slim = longSlim(id);
@@ -541,7 +604,16 @@ public class FlowDiagramPanel extends JPanel {
 		Point2D start;
 		Point2D end;
 		Path2D path = new Path2D.Double();
-		if (back) {
+		boolean around = !back && crossesANode(link, from, to);
+		if (around) {
+			// A link skipping a layer would run behind the node between: route it down the left.
+			start = new Point2D.Double(from.x, from.centerY());
+			end = new Point2D.Double(to.x, to.centerY());
+			double bulge = Math.min(from.x, to.x) - 48;
+			path.moveTo(start.getX(), start.getY());
+			path.curveTo(bulge, start.getY(), bulge, end.getY(), end.getX(), end.getY());
+			g2.setStroke(link.getKind() == LinkKind.ESCALATION ? dashed(1.8f) : new BasicStroke(1.8f));
+		} else if (back) {
 			// Route cycle edges down the right-hand side so they read as a loop-back.
 			start = new Point2D.Double(from.right(), from.centerY());
 			end = new Point2D.Double(to.right(), to.centerY());
@@ -560,14 +632,31 @@ public class FlowDiagramPanel extends JPanel {
 		}
 		g2.draw(path);
 		this.linkPaths.put(link, path);
-		drawArrowHead(g2, end, back ? new Point2D.Double(end.getX() + 1, end.getY()) : new Point2D.Double(end.getX(),
-				end.getY() - 1), color, back);
+		drawArrowHead(g2, end, back ? new Point2D.Double(end.getX() + 1, end.getY())
+				: around ? new Point2D.Double(end.getX() - 1, end.getY()) : new Point2D.Double(end.getX(), end.getY() - 1),
+				color, back || around);
 
 		if (!link.getLabel().isEmpty()) {
-			double lx = back ? Math.max(from.right(), to.right()) + 52 : (start.getX() + end.getX()) / 2;
+			double lx = back ? Math.max(from.right(), to.right()) + 52
+					: around ? Math.min(from.x, to.x) - 52 : (start.getX() + end.getX()) / 2;
 			double ly = (start.getY() + end.getY()) / 2;
 			drawLabel(g2, link.getLabel(), lx, ly, color);
 		}
+	}
+
+	/** Whether a node other than its ends lies in the way of a link drawn straight down. */
+	private boolean crossesANode(FlowLink link, NodeBounds from, NodeBounds to) {
+		double lo = Math.min(from.centerX(), to.centerX()), hi = Math.max(from.centerX(), to.centerX());
+		for (FlowNode node : this.graph.getNodes()) {
+			if (node.getId().equals(link.getFromId()) || node.getId().equals(link.getToId())) {
+				continue;
+			}
+			NodeBounds b = this.layout.boundsFor(node.getId());
+			if (b != null && b.y >= from.bottom() && b.bottom() <= to.y && b.right() >= lo && b.x <= hi) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void drawArrowHead(Graphics2D g2, Point2D tip, Point2D from, Color color, boolean horizontal) {
@@ -784,7 +873,7 @@ public class FlowDiagramPanel extends JPanel {
 		Color accent = nodeAccent(node.getKind());
 		RoundRectangle2D box = new RoundRectangle2D.Double(b.x, b.y, b.width, b.height, 12, 12);
 
-		g2.setColor(nodeFill(isHovered));
+		g2.setColor(this.ghosts.containsKey(node.getId()) && !isHovered ? GHOST_FILL : nodeFill(isHovered));
 		g2.fill(box);
 
 		g2.setStroke(new BasicStroke(isHovered ? 2.2f : 1.4f));
@@ -829,30 +918,44 @@ public class FlowDiagramPanel extends JPanel {
 		int klw = g2.getFontMetrics().stringWidth(kindLabel);
 		g2.drawString(kindLabel, (float) (b.right() - klw - 8), (float) (b.y + 14));
 
-		NodeSlim slim = this.showSplits ? longSlim(node.getId()) : null;
-		if (slim != null) {
-			// a long function: an amber outline, and its length as a badge, bottom right
-			g2.setStroke(new BasicStroke(2.0f));
+		Ghost ghost = this.ghosts.get(node.getId());
+		if (ghost != null) {
+			// a proposed function: dashed amber, so it reads as a preview, not the configuration
+			g2.setStroke(dashed(1.8f));
 			g2.setColor(LONG);
 			g2.draw(box);
+		}
+		NodeSlim slim = this.showSplits && (ghost == null || ghost.index() == 0) ? longSlim(node.getId()) : null;
+		if (slim != null) {
+			// a long function: an amber outline, and its length as a badge, bottom right
+			String key = origin(node.getId());
+			if (ghost == null) {
+				g2.setStroke(new BasicStroke(2.0f));
+				g2.setColor(LONG);
+				g2.draw(box);
+			}
+			g2.setColor(LONG);
 			g2.setFont(this.getFont().deriveFont(Font.BOLD, 9.5f));
-			String text = SplitCard.badge(slim.split()) + (this.pinned.contains(node.getId()) ? " ▾" : " ▸");
+			String text = SplitCard.badge(slim.split()) + (this.pinned.contains(key) ? " ▾" : " ▸");
 			FontMetrics fm = g2.getFontMetrics();
 			double bw = fm.stringWidth(text) + 10, bh = 15;
 			Rectangle2D badge = new Rectangle2D.Double(b.right() - bw - 6, b.bottom() - bh - 5, bw, bh);
 			g2.fill(new RoundRectangle2D.Double(badge.getX(), badge.getY(), bw, bh, 8, 8));
 			g2.setColor(Color.WHITE);
 			g2.drawString(text, (float) (badge.getX() + 5), (float) (badge.getY() + bh - 4));
-			this.badges.put(node.getId(), badge);
+			this.badges.put(key, badge);
 		}
 	}
+
+	/** A proposed function's fill: a faint amber. */
+	private static final Color GHOST_FILL = new JBColor(new Color(0xFFF8E1), new Color(0x3A3220));
 
 	/** Amber: a function over the 25-line cap. */
 	private static final Color LONG = new JBColor(new Color(0xE65100), new Color(0xFFA726));
 
 	/** A long function's split preview, to the right of its node: what to cut, and what it costs. */
 	private void paintSplitCard(Graphics2D g2, String nodeId, NodeSlim slim) {
-		NodeBounds b = this.layout.boundsFor(nodeId);
+		NodeBounds b = anchor(nodeId);
 		if (b == null) {
 			return;
 		}

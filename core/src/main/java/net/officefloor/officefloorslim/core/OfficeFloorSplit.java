@@ -102,6 +102,31 @@ public final class OfficeFloorSplit {
 		HANDLER
 	}
 
+	/** What joins one function of a plan to another. */
+	public enum LinkKind {
+		/** The function's end, on to the next: its {@code @Next}. */
+		NEXT,
+		/** A decision's branch: a flow it chooses. */
+		FLOW,
+		/** A return before the function's end: a flow to the method's end. */
+		RETURN,
+		/** A cut try's exception, escalated to its handler. */
+		ESCALATION
+	}
+
+	/**
+	 * One flow of a plan, between its functions by their index in {@link Plan#functions()}.
+	 *
+	 * @param from the function it leaves
+	 * @param to   the function it reaches; {@link #END} for the method's end
+	 * @param kind what it is
+	 */
+	public record Link(int from, int to, LinkKind kind) {
+
+		/** The method's end: what follows the method. */
+		public static final int END = -1;
+	}
+
 	/** Why no plan brings it under the target. */
 	public enum Reason {
 		/** A loop longer than the target: its body cannot be cut. */
@@ -165,19 +190,33 @@ public final class OfficeFloorSplit {
 	 * @param extraction  SinewSlim's cost of those pieces (combined split only)
 	 * @param tieByPieces the plan won a tie on the total by having fewer pieces: ordering the
 	 *                    functions first would have chosen another (combined split only)
+	 * @param links       its flows, function to function: each edge, an escalation drawn once
+	 *                    however many types it carries, and the functions whose flow leaves the
+	 *                    method listed in {@code outs}
+	 * @param outs        the functions whose flow leaves the method at its end, one entry per flow
+	 *                    (a decision straight to the method's end can be listed twice); a return
+	 *                    before a function's end is a {@link LinkKind#RETURN} link instead
+	 * @param returns     the functions that end in a {@code return}: the method's own end, so in
+	 *                    the flow graph they too go on to what follows the method (its value, if
+	 *                    any, passed to it)
 	 */
 	public record Plan(boolean applicable, boolean feasible, Reason reason, String detail, List<Function> functions,
-			int edges, int worstSeam, int total, int pieces, int extraction, boolean tieByPieces) {
+			int edges, int worstSeam, int total, int pieces, int extraction, boolean tieByPieces, List<Link> links,
+			List<Integer> outs, List<Integer> returns) {
 
 		static final Plan NOT_LONG = new Plan(false, true, null, null, List.of(), 0, 0, 0);
 
 		public Plan {
 			functions = List.copyOf(functions);
+			links = List.copyOf(links);
+			outs = List.copyOf(outs);
+			returns = List.copyOf(returns);
 		}
 
 		public Plan(boolean applicable, boolean feasible, Reason reason, String detail, List<Function> functions,
 				int edges, int worstSeam, int total) {
-			this(applicable, feasible, reason, detail, functions, edges, worstSeam, total, 0, 0, false);
+			this(applicable, feasible, reason, detail, functions, edges, worstSeam, total, 0, 0, false, List.of(),
+					List.of(), List.of());
 		}
 
 		/** The injection total and the extraction total: what the combined split chooses by. */
@@ -203,10 +242,34 @@ public final class OfficeFloorSplit {
 	}
 
 	/** A way of covering some statements: its functions, cost and edges so far, and the flows leaving it. */
+	/**
+	 * A way of covering some statements. {@code links} join its functions by their index in
+	 * {@code fns}; {@code outs} are the functions whose flow leaves it, one entry per flow (so
+	 * {@code exits} is their number once it has a function).
+	 */
 	private record Part(int functions, int cost, int edges, int exits, int worst, int pieces, int extraction,
-			List<Function> fns) {
+			List<Function> fns, List<Link> links, List<Integer> outs, List<Integer> returns) {
 
-		static final Part EMPTY = new Part(0, 0, 0, 1, 0, 0, 0, List.of());
+		static final Part EMPTY = new Part(0, 0, 0, 1, 0, 0, 0, List.of(), List.of(), List.of(), List.of());
+
+		/** One function on its own, its flows leaving from it. */
+		static Part of(Function f, int cost, int edges, int exits, int worst, List<Link> links) {
+			return of(f, cost, edges, exits, worst, links, false);
+		}
+
+		/** One function on its own, its flows leaving from it; {@code returns} when it ends in a return. */
+		static Part of(Function f, int cost, int edges, int exits, int worst, List<Link> links, boolean returns) {
+			List<Integer> outs = new ArrayList<>();
+			for (int i = 0; i < exits; i++) {
+				outs.add(0);
+			}
+			return new Part(1, cost, edges, exits, worst, f.pieces(), f.extraction(), List.of(f), links, outs,
+					returns ? List.of(0) : List.of());
+		}
+
+		Part with(List<Function> fns, List<Link> links) {
+			return new Part(functions, cost, edges, exits, worst, pieces, extraction, fns, links, outs, returns);
+		}
 
 		/** This, then {@code next}: the flows leaving this are the edges into {@code next}. */
 		Part then(Part next) {
@@ -216,18 +279,63 @@ public final class OfficeFloorSplit {
 			if (next.functions == 0) {
 				return this;
 			}
+			int n = fns.size();
 			List<Function> all = new ArrayList<>(fns);
 			all.addAll(next.fns);
+			List<Link> links = new ArrayList<>(this.links);
+			for (int out : outs) {
+				links.add(new Link(out, n, LinkKind.NEXT));
+			}
+			links.addAll(shift(next.links, n));
+			List<Integer> returns = new ArrayList<>(this.returns);
+			returns.addAll(shiftOuts(next.returns, n));
 			return new Part(functions + next.functions, cost + next.cost + exits, edges + next.edges + exits, next.exits,
-					Math.max(worst, next.worst), pieces + next.pieces, extraction + next.extraction, all);
+					Math.max(worst, next.worst), pieces + next.pieces, extraction + next.extraction, all, links,
+					shiftOuts(next.outs, n), returns);
 		}
 
-		/** This and {@code o} side by side (a branch, a handler), with {@code extra} edges into {@code o}. */
-		Part beside(Part o, int extra) {
+		/**
+		 * This and {@code o} side by side (a branch, a handler): {@code into} is the link from this
+		 * part's first function into {@code o}'s first, costing one edge; null for none.
+		 */
+		Part beside(Part o, LinkKind into) {
+			int n = fns.size(), extra = into == null ? 0 : 1;
 			List<Function> all = new ArrayList<>(fns);
 			all.addAll(o.fns);
+			List<Link> links = new ArrayList<>(this.links);
+			if (into != null) {
+				links.add(new Link(0, n, into));
+			}
+			links.addAll(shift(o.links, n));
+			List<Integer> outs = new ArrayList<>(this.outs);
+			outs.addAll(shiftOuts(o.outs, n));
+			List<Integer> returns = new ArrayList<>(this.returns);
+			returns.addAll(shiftOuts(o.returns, n));
 			return new Part(functions + o.functions, cost + o.cost + extra, edges + o.edges + extra, exits + o.exits,
-					Math.max(worst, o.worst), pieces + o.pieces, extraction + o.extraction, all);
+					Math.max(worst, o.worst), pieces + o.pieces, extraction + o.extraction, all, links, outs, returns);
+		}
+
+		/** One more flow leaving from the first function (a decision straight to the join). */
+		Part leaving() {
+			List<Integer> outs = new ArrayList<>(this.outs);
+			outs.add(0);
+			return new Part(functions, cost, edges, exits + 1, worst, pieces, extraction, fns, links, outs, returns);
+		}
+
+		private static List<Link> shift(List<Link> links, int n) {
+			List<Link> out = new ArrayList<>(links.size());
+			for (Link l : links) {
+				out.add(new Link(l.from() + n, l.to() == Link.END ? Link.END : l.to() + n, l.kind()));
+			}
+			return out;
+		}
+
+		private static List<Integer> shiftOuts(List<Integer> outs, int n) {
+			List<Integer> out = new ArrayList<>(outs.size());
+			for (int i : outs) {
+				out.add(i + n);
+			}
+			return out;
 		}
 	}
 
@@ -291,7 +399,8 @@ public final class OfficeFloorSplit {
 		for (int w = 0; w <= p.maxCarried(); w++) {
 			Part best = s.solve(w);
 			if (best != null) {
-				return new Plan(true, true, null, null, best.fns, best.edges, best.worst, best.cost);
+				return new Plan(true, true, null, null, best.fns, best.edges, best.worst, best.cost, 0, 0, false,
+						best.links, best.outs, best.returns);
 			}
 		}
 		return s.why();
@@ -332,7 +441,7 @@ public final class OfficeFloorSplit {
 		boolean tie = alt != null && alt.cost + alt.extraction == best.cost + best.extraction
 				&& (alt.pieces != best.pieces || alt.functions != best.functions);
 		return new Plan(true, true, null, null, best.fns, best.edges, best.worst, best.cost, best.pieces, best.extraction,
-				tie);
+				tie, best.links, best.outs, best.returns);
 	}
 
 	/** Why there is no plan: carried values when lifting the limit finds one, else the blocking statement. */
@@ -485,8 +594,8 @@ public final class OfficeFloorSplit {
 		// flow itself has nothing after it to skip, nor does the method as one function, whose returns
 		// are its own
 		int early = !ends && !method && returnsInside(run) > 0 ? 1 : 0;
-		return new Part(1, 1 + declares.size() + early, early, ends ? 0 : 1, declares.size(), f.pieces(), f.extraction(),
-				List.of(f));
+		return Part.of(f, 1 + declares.size() + early, early, ends ? 0 : 1, declares.size(),
+				early == 1 ? List.of(new Link(0, Link.END, LinkKind.RETURN)) : List.of(), last.kind() == StmtKind.RETURN);
 	}
 
 	/** Whether the run is the method's whole body. */
@@ -635,7 +744,7 @@ public final class OfficeFloorSplit {
 	 * leaving the branches (and the decision itself, for a branch with none) leave the whole.
 	 */
 	private List<Part> decide(Function decision, List<Map<Integer, Part>> branches, int direct) {
-		List<Part> combos = List.of(new Part(1, 1 + decision.seam(), 0, direct, decision.seam(), 0, 0, List.of(decision)));
+		List<Part> combos = List.of(Part.of(decision, 1 + decision.seam(), 0, direct, decision.seam(), List.of()));
 		for (Map<Integer, Part> options : branches) {
 			if (options.isEmpty()) {
 				return List.of();
@@ -645,9 +754,9 @@ public final class OfficeFloorSplit {
 				for (Part b : options.values()) {
 					Part d;
 					if (b.functions == 0) { // straight to the join
-						d = new Part(c.functions, c.cost, c.edges, c.exits + 1, c.worst, c.pieces, c.extraction, c.fns);
+						d = c.leaving();
 					} else {
-						d = c.beside(b, 1);
+						d = c.beside(b, LinkKind.FLOW);
 					}
 					Part cur = next.get(d.exits);
 					if (cur == null || better(d, cur)) {
@@ -694,7 +803,7 @@ public final class OfficeFloorSplit {
 			Map<Integer, Part> next = new HashMap<>();
 			for (Part a : combos) {
 				for (Part h : handler.values()) {
-					Part d = a.beside(handler(h, kids.get(c + 1), clause), 0);
+					Part d = escalate(a, handler(h, kids.get(c + 1), clause));
 					Part cur = next.get(d.exits);
 					if (cur == null || better(d, cur)) {
 						next.put(d.exits, d);
@@ -706,24 +815,33 @@ public final class OfficeFloorSplit {
 		return combos;
 	}
 
+	/** The try's parts beside a handler, with the escalation from the try's first function into it drawn once. */
+	private static Part escalate(Part tried, Part handler) {
+		Part d = tried.beside(handler, null);
+		if (tried.functions == 0) {
+			return d;
+		}
+		List<Link> links = new ArrayList<>(d.links);
+		links.add(new Link(0, tried.fns.size(), LinkKind.ESCALATION));
+		return d.with(d.fns, links);
+	}
+
 	/**
 	 * A catch's body as a handler: its first function marked the handler (an empty body is a
 	 * handler of its own), and an escalation edge per exception type the clause catches.
 	 */
 	private static Part handler(Part body, Stmt block, Catch clause) {
-		List<Function> fns = new ArrayList<>(body.fns);
-		int functions = body.functions, cost = body.cost, exits = body.exits;
-		if (fns.isEmpty()) {
-			fns.add(new Function(Kind.HANDLER, block.start(), block.end(), 0, List.of()));
-			functions = 1;
-			cost = 1;
-			exits = 1;
-		} else {
-			Function f = fns.get(0);
-			fns.set(0, new Function(Kind.HANDLER, f.lo(), f.hi(), f.lines(), f.declares(), f.inner()));
+		if (body.fns.isEmpty()) {
+			Part empty = Part.of(new Function(Kind.HANDLER, block.start(), block.end(), 0, List.of()), 1, 0, 1, 0,
+					List.of());
+			return new Part(1, 1 + clause.types(), clause.types(), 1, 0, 0, 0, empty.fns, empty.links, empty.outs,
+					List.of());
 		}
-		return new Part(functions, cost + clause.types(), body.edges + clause.types(), exits, body.worst, body.pieces,
-				body.extraction, fns);
+		List<Function> fns = new ArrayList<>(body.fns);
+		Function f = fns.get(0);
+		fns.set(0, new Function(Kind.HANDLER, f.lo(), f.hi(), f.lines(), f.declares(), f.inner()));
+		return new Part(body.functions, body.cost + clause.types(), body.edges + clause.types(), body.exits, body.worst,
+				body.pieces, body.extraction, fns, body.links, body.outs, body.returns);
 	}
 
 	// ------------------------------------------------------------------------------------------

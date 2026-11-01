@@ -88,6 +88,7 @@ common unit (DESIGN.md, *Comparing the two costs*).
 | `edges` | Its flows, escalations included |
 | `largest_function` | The code lines of its largest function (at most 25) |
 | `functions` | Each function: `kind` (`run`, `decision`, `handler`), `lo`, `hi`, `lines`, `declares` (the carried values) |
+| `links` | Its flows, function to function (since 0.5.0): `from` and `to`, each an index into `functions` (`to` null for the method's end, an early return), and `kind`: `next`, `flow` (a decision's branch), `return`, `escalation` (drawn once, however many types it carries, so there can be fewer links than `edges`) |
 
 ### `combined` (since 0.3.0)
 
@@ -110,6 +111,7 @@ functions.
 | `extraction_only` | One function: the method itself, slimmed by SinewSlim. Its `sum` is SinewSlim's `cost` plus 1. Injection is not used, and the plan counts as SinewSlim's |
 | `tie_by_pieces` | The plan won a tie on `sum` by having fewer pieces: ordering the functions first would have chosen another. The tie-break favours injection; this counts every tie it settled |
 | `functions` | Each function: `kind`, `lo`, `hi`, `lines` (before extraction), `declares`, `pieces` (each `{lo, hi, lines, inputs, outputs}`), and for a function SinewSlim slims, `remainder` and `extraction` |
+| `links` | As `officefloor.links` (since 0.5.0) |
 
 ### Categories
 
