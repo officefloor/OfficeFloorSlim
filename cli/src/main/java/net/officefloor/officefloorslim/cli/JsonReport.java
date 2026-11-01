@@ -122,7 +122,8 @@ final class JsonReport {
 		}
 		SlimResult s = a.proposal();
 		if (s.applicable() && s.feasible()) {
-			o.put("cost", s.cost()).put("width", s.width()).put("pieces", s.pieces()).put("remainder", s.remainder());
+			o.put("cost", s.cost()).put("width", s.width()).put("pieces", s.pieces()).put("remainder", s.remainder())
+					.put("largest_piece", s.pieceLines().stream().mapToInt(Integer::intValue).max().orElse(0));
 		} else {
 			o.putNull("cost");
 		}
@@ -141,7 +142,8 @@ final class JsonReport {
 			o.putNull("total");
 			return;
 		}
-		o.put("total", p.total()).put("worst_seam", p.worstSeam()).put("edges", p.edges());
+		o.put("total", p.total()).put("worst_seam", p.worstSeam()).put("edges", p.edges())
+				.put("largest_function", p.functions().stream().mapToInt(OfficeFloorSplit.Function::lines).max().orElse(0));
 		ArrayNode fns = o.putArray("functions");
 		for (OfficeFloorSplit.Function f : p.functions()) {
 			ObjectNode fo = fns.addObject().put("kind", f.kind().name().toLowerCase()).put("lo", f.lo()).put("hi", f.hi())

@@ -21,6 +21,8 @@ libraries. Scan a repository with:
 java -jar cli/build/libs/officefloorslim.jar scan --repo DIR --format markdown   # or json
 ```
 
+The JSON is a versioned contract: [docs/SCAN_JSON.md](docs/SCAN_JSON.md).
+
 ## Licence
 
 [Apache License 2.0](LICENSE).

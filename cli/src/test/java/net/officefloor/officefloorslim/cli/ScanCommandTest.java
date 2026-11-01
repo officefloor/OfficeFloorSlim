@@ -55,6 +55,10 @@ class ScanCommandTest {
 		for (String field : new String[] { "sinewslim", "officefloor", "category", "migration", "growth" }) {
 			assertTrue(m.has(field), field);
 		}
+		// the largest piece of each plan, so a reader compares them without computing anything
+		assertTrue(m.get("sinewslim").get("largest_piece").asInt() > 0);
+		assertTrue(m.get("officefloor").get("largest_function").asInt() > 0);
+		assertTrue(m.get("officefloor").get("largest_function").asInt() <= 25);
 	}
 
 	@Test
