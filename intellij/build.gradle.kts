@@ -21,6 +21,11 @@ dependencies {
     implementation(project(":officefloorslim-graph")) {
         exclude(group = "org.yaml", module = "snakeyaml")
     }
+    // the pricing the scan reports (SinewSlim's libraries, JavaParser), so a function marked long
+    // in the diagram, and its split, are what `officefloorslim scan` says of it
+    implementation(project(":officefloorslim-core")) {
+        exclude(group = "org.yaml", module = "snakeyaml")
+    }
 
     intellijPlatform {
         create(

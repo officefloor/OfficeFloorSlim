@@ -33,6 +33,7 @@ import net.officefloor.intellij.flow.layout.LayoutResult;
 import net.officefloor.intellij.flow.parser.ComposeYamlParser;
 import net.officefloor.intellij.flow.parser.FunctionMetaData;
 import net.officefloor.intellij.flow.parser.MetaDataEnricher;
+import net.officefloor.intellij.flow.slim.SlimEnricher;
 import net.officefloor.intellij.flow.ui.FlowControlPanel;
 import net.officefloor.intellij.flow.ui.FlowDiagramPanel;
 import net.officefloor.officefloorslim.graph.FlowGraph;
@@ -66,6 +67,7 @@ public class FlowDiagramEditor extends UserDataHolderBase implements FileEditor 
 	private boolean showControlFlow = true;
 	private boolean showDataFlow;
 	private boolean showHttpInputs;
+	private boolean showSplits = true;
 
 	/** Data-flow metadata (variables/parameter/return) is loaded lazily, in the background. */
 	private boolean enriched;
@@ -104,6 +106,14 @@ public class FlowDiagramEditor extends UserDataHolderBase implements FileEditor 
 						}
 						if (FlowDiagramEditor.this.diagramPanel != null) {
 							FlowDiagramEditor.this.diagramPanel.setShowHttpInputs(selected);
+						}
+					}
+
+					@Override
+					public void onSplits(boolean selected) {
+						FlowDiagramEditor.this.showSplits = selected;
+						if (FlowDiagramEditor.this.diagramPanel != null) {
+							FlowDiagramEditor.this.diagramPanel.setShowSplits(selected);
 						}
 					}
 
@@ -211,6 +221,11 @@ public class FlowDiagramEditor extends UserDataHolderBase implements FileEditor 
 					navigateToYaml(link.getSourceOffset());
 				}
 			}
+
+			@Override
+			public void onJavaLine(SlimEnricher.NodeSlim slim, int line) {
+				new OpenFileDescriptor(FlowDiagramEditor.this.project, slim.file(), line - 1, 0).navigate(true);
+			}
 		});
 		// Data-flow / HTTP-input metadata is resolved lazily; enable whenever there are functions.
 		this.controlPanel.setVisible(true);
@@ -218,10 +233,12 @@ public class FlowDiagramEditor extends UserDataHolderBase implements FileEditor 
 		panel.setShowControlFlow(this.showControlFlow);
 		panel.setShowDataFlow(this.showDataFlow);
 		panel.setShowHttpInputs(this.showHttpInputs);
+		panel.setShowSplits(this.showSplits);
 
 		this.diagramPanel = panel;
 		this.scrollPane.setViewportView(panel);
 		relayout();
+		slimInBackground(parsed, panel);
 
 		if (this.showDataFlow || this.showHttpInputs) {
 			enrichInBackground();
@@ -271,6 +288,28 @@ public class FlowDiagramEditor extends UserDataHolderBase implements FileEditor 
 				this.enriching = false;
 				if (this.diagramPanel != null) {
 					this.diagramPanel.repaint();
+				}
+			});
+		});
+	}
+
+	/**
+	 * Prices each function's method as {@code officefloorslim scan} would, off the EDT, so the long
+	 * ones are marked and their splits can be previewed. Runs once per rebuild; a newer rebuild
+	 * supersedes it.
+	 */
+	private void slimInBackground(FlowGraph target, FlowDiagramPanel panel) {
+		ApplicationManager.getApplication().executeOnPooledThread(() -> {
+			Map<String, SlimEnricher.NodeSlim> slims;
+			try {
+				slims = SlimEnricher.enrich(target, this.project);
+			} catch (Throwable ex) {
+				slims = java.util.Collections.emptyMap();
+			}
+			final Map<String, SlimEnricher.NodeSlim> resolved = slims;
+			ApplicationManager.getApplication().invokeLater(() -> {
+				if (this.diagramPanel == panel) {
+					panel.setSlims(resolved);
 				}
 			});
 		});

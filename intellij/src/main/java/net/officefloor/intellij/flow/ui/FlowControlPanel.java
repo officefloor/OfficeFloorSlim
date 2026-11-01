@@ -46,6 +46,10 @@ public final class FlowControlPanel extends JPanel {
 
 		void onHttpInputs(boolean selected);
 
+		/** Long functions marked, with their split preview. */
+		default void onSplits(boolean selected) {
+		}
+
 		void onZoomIn();
 
 		void onZoomOut();
@@ -59,6 +63,7 @@ public final class FlowControlPanel extends JPanel {
 	private final JBCheckBox controlFlow = new JBCheckBox("Control flow");
 	private final JBCheckBox dataFlow = new JBCheckBox("Data flow");
 	private final JBCheckBox httpInputs = new JBCheckBox("HTTP inputs");
+	private final JBCheckBox splits = new JBCheckBox("Long functions");
 	private final JPanel body = new JPanel();
 	private final CaretButton caret = new CaretButton();
 	private final Runnable onLayoutChanged;
@@ -110,6 +115,13 @@ public final class FlowControlPanel extends JPanel {
 		this.body.add(this.controlFlow);
 		this.body.add(this.dataFlow);
 		this.body.add(this.httpInputs);
+		this.splits.setOpaque(false);
+		this.splits.setSelected(true);
+		this.splits.setToolTipText("Mark functions over 25 code lines; hover one to preview how it splits into "
+				+ "functions, with any methods to extract inside them");
+		this.splits.setAlignmentX(Component.LEFT_ALIGNMENT);
+		this.splits.addActionListener(e -> listener.onSplits(this.splits.isSelected()));
+		this.body.add(this.splits);
 
 		this.body.add(Box.createVerticalStrut(JBUI.scale(10)));
 

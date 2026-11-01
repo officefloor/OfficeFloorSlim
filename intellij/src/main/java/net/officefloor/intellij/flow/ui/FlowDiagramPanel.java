@@ -23,8 +23,10 @@ import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JPanel;
 
@@ -32,6 +34,8 @@ import com.intellij.ui.JBColor;
 
 import net.officefloor.intellij.flow.layout.LayoutResult;
 import net.officefloor.intellij.flow.layout.NodeBounds;
+import net.officefloor.intellij.flow.slim.SlimEnricher.NodeSlim;
+import net.officefloor.intellij.flow.slim.SplitCard;
 import net.officefloor.officefloorslim.graph.DataFlowLink;
 import net.officefloor.officefloorslim.graph.FlowGraph;
 import net.officefloor.officefloorslim.graph.FlowLink;
@@ -59,6 +63,10 @@ public class FlowDiagramPanel extends JPanel {
 		void onNode(FlowNode node, boolean preferYaml);
 
 		void onLink(FlowLink link);
+
+		/** A row of a function's split card: go to that line of its method's source. */
+		default void onJavaLine(NodeSlim slim, int line) {
+		}
 	}
 
 	private final FlowGraph graph;
@@ -76,6 +84,21 @@ public class FlowDiagramPanel extends JPanel {
 	private boolean showDataFlow;
 	private boolean showHttpInputs;
 	private FlowNode hovered;
+
+	/** Each function's method, priced as the scan prices it, by node id: the long ones are marked. */
+	private Map<String, NodeSlim> slims = Map.of();
+	/** Long functions marked, and their split card shown on hover or when pinned. */
+	private boolean showSplits = true;
+	/** The functions whose card stays open: toggled by clicking the node's badge. */
+	private final Set<String> pinned = new LinkedHashSet<>();
+	/** The badges and cards painted in the current frame, for hit-testing (model coords). */
+	private final Map<String, Rectangle2D> badges = new HashMap<>();
+	private final Map<String, Rectangle2D> cards = new HashMap<>();
+	private final List<CardRow> cardRows = new ArrayList<>();
+
+	/** A clickable row of a split card. */
+	private record CardRow(Rectangle2D bounds, String nodeId, int line) {
+	}
 
 	/** Visual style of a chip, by what the function does with the value. */
 	private enum ChipStyle {
@@ -128,6 +151,27 @@ public class FlowDiagramPanel extends JPanel {
 					return;
 				}
 				boolean preferYaml = e.getClickCount() >= 2;
+				if (FlowDiagramPanel.this.showSplits) {
+					CardRow row = cardRowAt(e.getPoint());
+					if (row != null) {
+						NodeSlim slim = FlowDiagramPanel.this.slims.get(row.nodeId());
+						if (slim != null && row.line() > 0) {
+							FlowDiagramPanel.this.navigationListener.onJavaLine(slim, row.line());
+						}
+						return;
+					}
+					String badge = badgeAt(e.getPoint());
+					if (badge != null) {
+						if (!FlowDiagramPanel.this.pinned.remove(badge)) {
+							FlowDiagramPanel.this.pinned.add(badge);
+						}
+						repaint();
+						return;
+					}
+					if (cardAt(e.getPoint()) != null) {
+						return; // inside a card, between rows
+					}
+				}
 				if (chipsVisible()) {
 					Chip chip = chipAt(e.getPoint());
 					if (chip != null) {
@@ -153,6 +197,25 @@ public class FlowDiagramPanel extends JPanel {
 
 			@Override
 			public void mouseMoved(MouseEvent e) {
+				String card = FlowDiagramPanel.this.showSplits ? cardAt(e.getPoint()) : null;
+				if (card != null) {
+					// over a card: its function stays hovered, so the card stays open
+					FlowNode owner = FlowDiagramPanel.this.graph.getNode(card);
+					if (owner != FlowDiagramPanel.this.hovered && !FlowDiagramPanel.this.pinned.contains(card)) {
+						FlowDiagramPanel.this.hovered = owner;
+						repaint();
+					}
+					CardRow row = cardRowAt(e.getPoint());
+					setCursor(Cursor.getPredefinedCursor(row != null && row.line() > 0 ? Cursor.HAND_CURSOR
+							: Cursor.DEFAULT_CURSOR));
+					setToolTipText(row != null && row.line() > 0 ? "Go to line " + row.line() : null);
+					return;
+				}
+				if (FlowDiagramPanel.this.showSplits && badgeAt(e.getPoint()) != null) {
+					setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+					setToolTipText("Click to keep this function's split open");
+					return;
+				}
 				Chip chip = chipsVisible() ? chipAt(e.getPoint()) : null;
 				FlowNode node = chip == null ? nodeAt(e.getPoint()) : FlowDiagramPanel.this.graph.getNode(chip.nodeId);
 				if (node != FlowDiagramPanel.this.hovered) {
@@ -221,6 +284,65 @@ public class FlowDiagramPanel extends JPanel {
 
 	public boolean isShowHttpInputs() {
 		return this.showHttpInputs;
+	}
+
+	/** Each function's method, priced; replaces any earlier. */
+	public void setSlims(Map<String, NodeSlim> slims) {
+		this.slims = slims == null ? Map.of() : Map.copyOf(slims);
+		this.repaint();
+	}
+
+	public void setShowSplits(boolean showSplits) {
+		this.showSplits = showSplits;
+		this.repaint();
+	}
+
+	public boolean isShowSplits() {
+		return this.showSplits;
+	}
+
+	/** Keeps a long function's split card open, or closes it: as clicking its badge does. */
+	public void togglePinned(String nodeId) {
+		if (!this.pinned.remove(nodeId)) {
+			this.pinned.add(nodeId);
+		}
+		this.repaint();
+	}
+
+	/** The long function's pricing for a node; null when it is not long or not known. */
+	private NodeSlim longSlim(String nodeId) {
+		NodeSlim s = this.slims.get(nodeId);
+		return s != null && s.split().longMethod() ? s : null;
+	}
+
+	private String badgeAt(Point devicePoint) {
+		return keyAt(this.badges, devicePoint);
+	}
+
+	private String cardAt(Point devicePoint) {
+		return keyAt(this.cards, devicePoint);
+	}
+
+	private String keyAt(Map<String, Rectangle2D> rects, Point devicePoint) {
+		double mx = devicePoint.x / this.scale;
+		double my = devicePoint.y / this.scale;
+		for (Map.Entry<String, Rectangle2D> e : rects.entrySet()) {
+			if (e.getValue().contains(mx, my)) {
+				return e.getKey();
+			}
+		}
+		return null;
+	}
+
+	private CardRow cardRowAt(Point devicePoint) {
+		double mx = devicePoint.x / this.scale;
+		double my = devicePoint.y / this.scale;
+		for (CardRow r : this.cardRows) {
+			if (r.bounds().contains(mx, my)) {
+				return r;
+			}
+		}
+		return null;
 	}
 
 	/** Chips (variables, parameter, HTTP inputs) are drawn when either mode is on. */
@@ -328,6 +450,10 @@ public class FlowDiagramPanel extends JPanel {
 			}
 			sb.append("</i>");
 		}
+		NodeSlim slim = this.slims.get(node.getId());
+		if (slim != null) {
+			sb.append("<br/>").append(escape(SplitCard.summary(slim.split())));
+		}
 		return sb.append("</html>").toString();
 	}
 
@@ -346,6 +472,9 @@ public class FlowDiagramPanel extends JPanel {
 
 			this.linkPaths.clear();
 			this.chips.clear();
+			this.badges.clear();
+			this.cards.clear();
+			this.cardRows.clear();
 
 			// Chip overlay (behind nodes): compute chip geometry first so data links connect chip to chip.
 			if (chipsVisible()) {
@@ -378,6 +507,20 @@ public class FlowDiagramPanel extends JPanel {
 			// Chips drawn on top of the nodes.
 			if (chipsVisible()) {
 				paintChips(g2);
+			}
+
+			// Split cards on top of everything: the pinned ones, and the hovered function's.
+			if (this.showSplits) {
+				Set<String> open = new LinkedHashSet<>(this.pinned);
+				if (this.hovered != null) {
+					open.add(this.hovered.getId());
+				}
+				for (String id : open) {
+					NodeSlim slim = longSlim(id);
+					if (slim != null) {
+						paintSplitCard(g2, id, slim);
+					}
+				}
 			}
 		} finally {
 			g2.dispose();
@@ -685,6 +828,76 @@ public class FlowDiagramPanel extends JPanel {
 		String kindLabel = kindLabel(node.getKind());
 		int klw = g2.getFontMetrics().stringWidth(kindLabel);
 		g2.drawString(kindLabel, (float) (b.right() - klw - 8), (float) (b.y + 14));
+
+		NodeSlim slim = this.showSplits ? longSlim(node.getId()) : null;
+		if (slim != null) {
+			// a long function: an amber outline, and its length as a badge, bottom right
+			g2.setStroke(new BasicStroke(2.0f));
+			g2.setColor(LONG);
+			g2.draw(box);
+			g2.setFont(this.getFont().deriveFont(Font.BOLD, 9.5f));
+			String text = SplitCard.badge(slim.split()) + (this.pinned.contains(node.getId()) ? " ▾" : " ▸");
+			FontMetrics fm = g2.getFontMetrics();
+			double bw = fm.stringWidth(text) + 10, bh = 15;
+			Rectangle2D badge = new Rectangle2D.Double(b.right() - bw - 6, b.bottom() - bh - 5, bw, bh);
+			g2.fill(new RoundRectangle2D.Double(badge.getX(), badge.getY(), bw, bh, 8, 8));
+			g2.setColor(Color.WHITE);
+			g2.drawString(text, (float) (badge.getX() + 5), (float) (badge.getY() + bh - 4));
+			this.badges.put(node.getId(), badge);
+		}
+	}
+
+	/** Amber: a function over the 25-line cap. */
+	private static final Color LONG = new JBColor(new Color(0xE65100), new Color(0xFFA726));
+
+	/** A long function's split preview, to the right of its node: what to cut, and what it costs. */
+	private void paintSplitCard(Graphics2D g2, String nodeId, NodeSlim slim) {
+		NodeBounds b = this.layout.boundsFor(nodeId);
+		if (b == null) {
+			return;
+		}
+		List<SplitCard.Row> rows = SplitCard.rows(slim.split());
+		Font plain = this.getFont().deriveFont(Font.PLAIN, 11f);
+		Font bold = this.getFont().deriveFont(Font.BOLD, 11.5f);
+		double pad = 10, rowH = 17, width = 0;
+		for (SplitCard.Row r : rows) {
+			g2.setFont(r.style() == SplitCard.Style.TITLE ? bold : plain);
+			width = Math.max(width, g2.getFontMetrics().stringWidth(r.text()) + indent(r) );
+		}
+		width = Math.min(width + 2 * pad, 640);
+		double height = rows.size() * rowH + 2 * pad;
+		double x = b.right() + 14, y = b.y;
+		RoundRectangle2D card = new RoundRectangle2D.Double(x, y, width, height, 10, 10);
+		g2.setColor(new JBColor(new Color(0xFFF8E1), new Color(0x3A3220)));
+		g2.fill(card);
+		g2.setStroke(new BasicStroke(1.4f));
+		g2.setColor(LONG);
+		g2.draw(card);
+		// a pointer from the node to its card
+		g2.drawLine((int) b.right(), (int) (b.y + 14), (int) x, (int) (b.y + 14));
+		this.cards.put(nodeId, card.getBounds2D());
+
+		double ry = y + pad;
+		for (SplitCard.Row r : rows) {
+			g2.setFont(r.style() == SplitCard.Style.TITLE ? bold : plain);
+			g2.setColor(switch (r.style()) {
+			case TITLE -> JBColor.foreground();
+			case NOTE -> JBColor.GRAY;
+			case FUNCTION -> nodeAccent(NodeKind.PROCEDURE);
+			case PIECE -> JBColor.foreground();
+			case BLOCKED -> LONG;
+			});
+			double rx = x + pad + indent(r);
+			g2.drawString(ellipsize(g2, r.text(), width - 2 * pad - indent(r)), (float) rx, (float) (ry + rowH - 5));
+			if (r.line() > 0) {
+				this.cardRows.add(new CardRow(new Rectangle2D.Double(x, ry, width, rowH), nodeId, r.line()));
+			}
+			ry += rowH;
+		}
+	}
+
+	private static double indent(SplitCard.Row r) {
+		return r.style() == SplitCard.Style.PIECE ? 18 : 0;
 	}
 
 	private String ellipsize(Graphics2D g2, String text, double maxWidth) {
