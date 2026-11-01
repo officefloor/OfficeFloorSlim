@@ -1,6 +1,6 @@
 <idea-plugin>
     <id>net.officefloor.ide.rest.plugin</id>
-    <name>OfficeFloor</name>
+    <name>OfficeFloor IoCC</name>
     <vendor email="daniel@sagenschneider.net" url="https://officefloor.net">OfficeFloor</vendor>
 
     <description><![CDATA[
@@ -26,8 +26,9 @@
 
     <change-notes><![CDATA[
         <ul>
-          <li><b>0.2.0</b>: Renamed "OfficeFloor" (was "OfficeFloor REST View"), and now
-          released from the OfficeFloorSlim repository. The flow diagram is read by the same rules
+          <li><b>0.2.1</b>: Renamed "OfficeFloor IoCC" (was "OfficeFloor REST View"), and now
+          released from the OfficeFloorSlim repository (its 0.2.0 was not released to the
+          Marketplace: the name "OfficeFloor" is already taken there). The flow diagram is read by the same rules
           as OfficeFloorSlim's command line, so both give the same graph; what the diagram shows
           is otherwise unchanged.</li>
           <li><b>0.1.1</b>: Signed by OfficeFloor: each release now carries the

@@ -13,8 +13,8 @@ A copy of an earlier version of this plan, with the architecture drawn, is the d
 
 - Maven group `net.officefloor.sinewslim` for both projects; artifacts `sinewslim-*` and
   `officefloorslim-*`. Only SinewSlim publishes to Central.
-- The OfficeFloor IntelliJ plugin is copied in without its git history and renamed "OfficeFloor"
-  on the Marketplace (the plugin ID stays).
+- The OfficeFloor IntelliJ plugin is copied in without its git history and renamed "OfficeFloor IoCC"
+  on the Marketplace (the plugin ID stays; "OfficeFloor" is taken there).
 - The two costs are reported side by side, never in a common unit.
 - Growth window: the last N commits or the last 12 months, whichever is shorter (N = 500 by
   default, configurable).
@@ -95,9 +95,9 @@ not have it yet. The branch merges to `main` once Phases 1–3 work locally.
 
 - [x] Copy `~/OfficeFloor-IntelliJ-Plugin` into `intellij/` as one commit (no history), from its 7bc06d4: sources, samples and README, its build folded into this one (`:intellij`, `-Pversion`), its 14 tests passing
 - [x] Keep the plugin ID `net.officefloor.ide.rest.plugin`, so everyone with 0.1.1 installed gets the update
-- [ ] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor" (`plugin.xml` says "OfficeFloor" now; the listing follows with the first release from here)
+- [ ] Rename it on the Marketplace from "OfficeFloor REST View" to "OfficeFloor IoCC" (`plugin.xml` says so; the listing follows with 0.2.1. 0.2.0's upload as "OfficeFloor" was refused: the name is taken)
 - [x] Keep its signing and Marketplace publishing; move its release workflow across (`release.yml`, `verify-plugin.yml`, on `:intellij`)
-- [ ] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets (added, 01574af there; the script is to run)
+- [x] Before the first release from here: add `OfficeFloorSlim` to OfficeFloorMaintenance's `jetbrains-plugin-repositories.txt` and run `setup-jetbrains-publishing.sh`, so this repository can read the publishing secrets (added, 01574af there; the script is to run)
 - [x] Expose the graph model (which classes and methods are wired as functions) to the classification: `officefloorslim-graph` (`graph/`, package `net.officefloor.officefloorslim.graph`) holds the model and `ComposeGraph`, the YAML rules; the plugin reads by PSI, the scan by SnakeYAML (`ComposeYamlReader`), and `ReaderParityTest` checks they give the same graph on every sample
 - [ ] After the first release from here: archive the old repository with a pointer to this one
 

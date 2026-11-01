@@ -1,4 +1,4 @@
-# OfficeFloor — IntelliJ plugin
+# OfficeFloor IoCC — IntelliJ plugin
 
 Until 0.1.1 this was **OfficeFloor REST View**, released from
 [OfficeFloor-IntelliJ-Plugin](https://github.com/officefloor/OfficeFloor-IntelliJ-Plugin). It
@@ -17,8 +17,8 @@ next to the text editor, showing the functions flowing down the page with their
 
 From the [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/35087-officefloor-rest-view):
 in IntelliJ IDEA (2024.2 or later), open **Settings → Plugins → Marketplace**,
-search for **OfficeFloor** (listed as **OfficeFloor REST View** until the first release from
-here), and click **Install**. The IDE then offers
+search for **OfficeFloor IoCC** (listed as **OfficeFloor REST View** until 0.2.1, the first
+release from here), and click **Install**. The IDE then offers
 each new version as it is released.
 
 ## What it understands

@@ -87,7 +87,7 @@ Each arrow points from a part to what it depends on. Two rules hold:
 | SinewSlim libraries | Parsing, method facts, seam roles, scanning; the conventional cost and split | Maven Central, `net.officefloor.sinewslim:sinewslim-*` |
 | SinewSlim tools | Health scan, review gate, conventional split in the IDE | CLI jar, Docker image, GitHub Action, GitLab component, JetBrains plugin |
 | OfficeFloorSlim | Classification, OfficeFloor cost and split, wiring, assessments | Docker image and CLI; nothing on Central (self-contained: only SinewSlim's libraries are shared) |
-| OfficeFloorSlim IntelliJ plugin | OfficeFloor development and visualisation (today's OfficeFloor REST View), long functions and their splits marked on the graphs, and the AI-assisted migration | JetBrains Marketplace as "OfficeFloor", keeping the plugin ID `net.officefloor.ide.rest.plugin` |
+| OfficeFloorSlim IntelliJ plugin | OfficeFloor development and visualisation (today's OfficeFloor REST View), long functions and their splits marked on the graphs, and the AI-assisted migration | JetBrains Marketplace as "OfficeFloor IoCC" ("OfficeFloor" is taken there), keeping the plugin ID `net.officefloor.ide.rest.plugin` |
 
 ### The shared libraries
 
@@ -268,8 +268,9 @@ the way SinewSlim holds its own:
 - its files are copied in as one commit, without its git history (it was a couple of commits
   in an evening; the old repository stays as the record until it is archived);
 - its plugin ID is kept, so everyone with it installed gets the update; its Marketplace name
-  changes from "OfficeFloor REST View" to "OfficeFloor", since it now covers any OfficeFloor
-  function, not only REST;
+  changes from "OfficeFloor REST View" to "OfficeFloor IoCC", since it now covers any
+  OfficeFloor function, not only REST ("OfficeFloor" itself is taken on the Marketplace, found
+  when 0.2.0's upload was refused; the rename shipped in 0.2.1);
 - its graph model is exposed to the classification, which is the strongest evidence that a
   method is an OfficeFloor function;
 - the analysis marks long functions and their proposed splits on the graphs;
@@ -501,7 +502,8 @@ reusing the libraries in their own frameworks.
 
 Decided on 31 October 2026, and recorded in the sections above: the Maven group
 (`net.officefloor.sinewslim` for both), no Central libraries from this project, the plugin
-copied in without its history and renamed "OfficeFloor", the two costs side by side, the growth
+copied in without its history and renamed "OfficeFloor" (since "OfficeFloor IoCC", the
+Marketplace having the name taken), the two costs side by side, the growth
 window (N commits or 12 months, whichever is shorter), the migration in the plugin only with
 pluggable providers, the study being `~/ui-long-degradation-test`, and this repository public.
 
