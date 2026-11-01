@@ -26,13 +26,20 @@ import net.officefloor.sinewslim.facts.Var;
  * @param officefloor  the OfficeFloor split's plan
  * @param category     the category, for a method SinewSlim cannot slim with one return per
  *                     piece; null otherwise
- * @param migration    what moving it to OfficeFloor would take
+ * @param migration    what moving it to OfficeFloor would take (by the injection split's plan)
+ * @param combined     the combined split's plan ({@link #COMBINED_READING}: functions, with
+ *                     SinewSlim's extractions inside them)
+ * @param combinedCategory the category with the combined split as the OfficeFloor column; null
+ *                     where {@code category} is
  */
 public record Pricing(Assessment conventional, OfficeFloorSplit.Plan officefloor, Category category,
-		Migration migration) {
+		Migration migration, OfficeFloorSplit.Plan combined, Category combinedCategory) {
 
 	/** What the OfficeFloor column is: OfficeFloorSlim's own split (Phase 4), version 1. */
-	public static final String OFFICEFLOOR_READING = "officefloorslim-split/1";
+	public static final String OFFICEFLOOR_READING = OfficeFloorSplit.Version.INJECTION.reading();
+
+	/** The combined split, reported beside it (DESIGN.md, The combined split). */
+	public static final String COMBINED_READING = OfficeFloorSplit.Version.COMBINED.reading();
 
 	static final Assessor CONVENTIONAL = Assessor.DEFAULTS;
 
@@ -87,9 +94,14 @@ public record Pricing(Assessment conventional, OfficeFloorSplit.Plan officefloor
 	public static Pricing of(MethodFacts facts, MethodShape shape) {
 		Assessment conventional = CONVENTIONAL.assess(facts);
 		OfficeFloorSplit.Plan officefloor = OfficeFloorSplit.plan(facts, shape);
-		Category category = category(conventional.status(), () -> Slimmer.slim(facts, RESTRUCTURED).feasible(),
-				officefloor.feasible());
-		return new Pricing(conventional, officefloor, category, migration(facts, shape, officefloor));
+		OfficeFloorSplit.Plan combined = OfficeFloorSplit.combined(facts, shape);
+		Boolean[] restructured = new Boolean[1]; // asked at most once, and only when needed
+		BooleanSupplier restructure = () -> restructured[0] != null ? restructured[0]
+				: (restructured[0] = Slimmer.slim(facts, RESTRUCTURED).feasible());
+		Category category = category(conventional.status(), restructure, officefloor.feasible());
+		Category combinedCategory = category(conventional.status(), restructure, combined.feasible());
+		return new Pricing(conventional, officefloor, category, migration(facts, shape, officefloor), combined,
+				combinedCategory);
 	}
 
 	/**

@@ -50,7 +50,11 @@ final class MarkdownReport {
 		b.append(String.format(Locale.ROOT,
 				"Category 3 is %d of %d not-slimmable methods (%.1f%%). The bar asks for at least a quarter, and at least 30: %s.\n",
 				r.bar().category3(), r.bar().notSlimmable(), r.bar().share() * 100, r.bar().go() ? "**met**" : "**not met**"));
-		b.append("On the study's Spring arms this decides Phases 4 to 6; on any other repository it is a reading only.\n");
+		b.append(String.format(Locale.ROOT,
+				"With the combined split (%s: functions, with SinewSlim's extractions inside them) as the OfficeFloor column, category 3 is %d (%.1f%%): %s.\n",
+				Pricing.COMBINED_READING, r.combinedBar().category3(), r.combinedBar().share() * 100,
+				r.combinedBar().go() ? "**met**" : "**not met**"));
+		b.append("The bar is a reading, not a gate.\n");
 
 		var m = r.measures();
 		b.append("\n## Wiring\n\n");
@@ -71,8 +75,8 @@ final class MarkdownReport {
 				b.append("None.\n");
 				continue;
 			}
-			b.append("| Method | Lines | Reading | SinewSlim | OfficeFloor column | Migration | Growth |\n");
-			b.append("|---|---:|---|---|---|---|---|\n");
+			b.append("| Method | Lines | Reading | SinewSlim | OfficeFloor column | Combined | Migration | Growth |\n");
+			b.append("|---|---:|---|---|---|---|---|---|\n");
 			for (Method x : in) {
 				Pricing p = x.pricing();
 				var mig = p.migration();
@@ -80,6 +84,7 @@ final class MarkdownReport {
 						.append(".").append(cell(x.signature())).append(" | ").append(x.length()).append(" | ")
 						.append(name(x.classification().reading().name())).append(": ").append(cell(x.classification().evidence()))
 						.append(" | ").append(price(p.conventional())).append(" | ").append(plan(p.officefloor()))
+						.append(" | ").append(combined(p.combined()))
 						.append(" | ").append(mig.fields()).append(" fields").append(mig.transactional() ? ", transactional" : "")
 						.append(", ").append(mig.escalations()).append(" escalations")
 						.append(mig.functions() < 0 ? "" : ", " + mig.functions() + " functions, " + mig.edges() + " flows")
@@ -115,6 +120,14 @@ final class MarkdownReport {
 		}
 		return "cost " + p.total() + " (" + plural(p.functions().size(), "function") + ", " + plural(p.edges(), "flow")
 				+ ", worst seam " + p.worstSeam() + ")";
+	}
+
+	static String combined(OfficeFloorSplit.Plan p) {
+		if (!p.feasible()) {
+			return "not splittable: " + name(p.reason().name());
+		}
+		return "sum " + p.sum() + " (" + plural(p.functions().size(), "function") + ", " + plural(p.pieces(), "piece")
+				+ (p.extractionOnly() ? ", extraction only" : "") + ")";
 	}
 
 	static String name(String constant) {

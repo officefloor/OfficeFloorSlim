@@ -16,6 +16,7 @@ common unit (DESIGN.md, *Comparing the two costs*).
 | `tool` | string | `officefloorslim <version>` |
 | `facts_schema` | int | The SinewSlim facts' schema the scan read (3) |
 | `officefloor_reading` | string | What the OfficeFloor column is: `officefloorslim-split/1` |
+| `combined_reading` | string | What the combined column is: `officefloorslim-split/2` (since 0.3.0) |
 | `repository` | string | The directory scanned |
 | `commit` | string or null | Its `HEAD`; null outside git |
 | `seconds` | number | How long the scan took |
@@ -24,7 +25,8 @@ common unit (DESIGN.md, *Comparing the two costs*).
 | `unparsed` | array | `{path, problem}` for each file that could not be read |
 | `methods_by_reading` | object | Every method by reading: `officefloor_function`, `framework_entry_point`, `conventional` |
 | `long_methods` | int | Methods of 26 code lines or more |
-| `bar` | object | The go/no-go bar's numbers (below) |
+| `bar` | object | The go/no-go bar's numbers (below), with `officefloorslim-split/1` as the OfficeFloor column |
+| `combined_bar` | object | The same numbers with `officefloorslim-split/2` as the OfficeFloor column (since 0.3.0) |
 | `wiring` | object | The OfficeFloor configuration (below) |
 | `methods` | array | Each long method (below); methods under the cap are counted, not listed |
 
@@ -57,7 +59,9 @@ common unit (DESIGN.md, *Comparing the two costs*).
 | `evidence` | Why, readable: `wired in rest/api/x.GET.yml`, `@GetMapping`, `public, in a @Service` |
 | `sinewslim` | SinewSlim's assessment, under its defaults (below) |
 | `officefloor` | The OfficeFloor split's plan (below) |
+| `combined` | The combined split's plan (below; since 0.3.0) |
 | `category` | For a method SinewSlim cannot slim with one return per piece: `{number, label}`; else null |
+| `combined_category` | The same, with the combined split as the OfficeFloor column (since 0.3.0) |
 | `migration` | `fields` (touched: beans to bridge), `transactional`, `escalations` (exception types declared or caught), `functions` and `edges` of the split (null without a plan). Each in its own unit; never summed |
 | `growth` | `{lines_added, commits}` over the window, on its code lines, from `git blame` at `HEAD`; null outside git, or with `--no-growth` |
 
@@ -85,6 +89,28 @@ common unit (DESIGN.md, *Comparing the two costs*).
 | `largest_function` | The code lines of its largest function (at most 25) |
 | `functions` | Each function: `kind` (`run`, `decision`, `handler`), `lo`, `hi`, `lines`, `declares` (the carried values) |
 
+### `combined` (since 0.3.0)
+
+The combined split, `officefloorslim-split/2` (DESIGN.md, *The combined split*): functions where
+the flow divides, cut by the same rules as `officefloor`, with SinewSlim's extractions inside any
+function over the target. The plan is the smallest `sum`, then the fewer pieces, then the fewer
+functions.
+
+| Field | Meaning |
+|---|---|
+| `feasible` | Whether it has a plan |
+| `reason`, `detail` | Without one: as `officefloor`'s, the detail adding what SinewSlim found in the blocking statement as a function body |
+| `sum` | `injection_total` plus `extraction_total`: what the plan is chosen by; null without a plan, and then the fields below are absent |
+| `injection_total` | The carried values each function declares, plus 1 per function, plus 1 per flow (as `officefloor.total`) |
+| `extraction_total` | SinewSlim's cost of every piece extracted inside the functions |
+| `worst_seam` | The most carried values one function declares |
+| `worst_piece` | The widest of the pieces inside the functions, by SinewSlim's width; 0 when there are none |
+| `edges` | Its flows, escalations included |
+| `pieces` | The pieces extracted inside the functions |
+| `extraction_only` | One function: the method itself, slimmed by SinewSlim. Its `sum` is SinewSlim's `cost` plus 1. Injection is not used, and the plan counts as SinewSlim's |
+| `tie_by_pieces` | The plan won a tie on `sum` by having fewer pieces: ordering the functions first would have chosen another. The tie-break favours injection; this counts every tie it settled |
+| `functions` | Each function: `kind`, `lo`, `hi`, `lines` (before extraction), `declares`, `pieces` (each `{lo, hi, lines, inputs, outputs}`), and for a function SinewSlim slims, `remainder` and `extraction` |
+
 ### Categories
 
 Tested in this order, for a method SinewSlim cannot slim with one return per piece:
@@ -93,7 +119,7 @@ Tested in this order, for a method SinewSlim cannot slim with one return per pie
 |---|---|---|
 | 2 | needs records | SinewSlim slims it with a record |
 | 1 | conventionally fixable once restructured | SinewSlim's defaults slim it with the jump rule lifted |
-| 3 | only splits under function injection | the OfficeFloor split has a plan |
+| 3 | only splits under function injection | the OfficeFloor split has a plan (`category`: `officefloorslim-split/1`; `combined_category`: `officefloorslim-split/2`) |
 | 4 | needs a redesign | none of these |
 
 ## What compares, and what does not
@@ -102,3 +128,9 @@ Tested in this order, for a method SinewSlim cannot slim with one return per pie
 `sinewslim.pieces` and the length of `officefloor.functions` both count the parts;
 `largest_piece` and `largest_function` both measure the largest part. `sinewslim.cost` and
 `officefloor.total` count different things and are not to be compared or combined.
+
+Within the combined split, and only there, the two kinds of cost are added (`sum`): both count
+values crossing a boundary and 1 per part, and the sum is what chooses its plan (DESIGN.md,
+question 11). Because the method as one function is always a candidate, `combined.sum` is never
+more than `sinewslim.cost` plus 1 where SinewSlim slims the method: that is by construction, not a
+finding.

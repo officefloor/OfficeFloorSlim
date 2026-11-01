@@ -129,11 +129,12 @@ public final class RepositoryScan {
 	 * @param wiring     the configuration files
 	 * @param measures   the wiring measures
 	 * @param byReading  every method by reading
-	 * @param bar        the go/no-go bar's numbers
+	 * @param bar        the go/no-go bar's numbers, with the injection split as the OfficeFloor column
+	 * @param combinedBar the same numbers with the combined split as the OfficeFloor column
 	 */
 	public record Result(Path root, String commit, Options options, double seconds, int files, List<Unparsed> unparsed,
 			List<Method> methods, List<WiringFile> wiring, WiringMeasures measures, Map<Reading, Integer> byReading,
-			Bar bar) {
+			Bar bar, Bar combinedBar) {
 	}
 
 	/** What one file gave: a Java file's methods (long ones priced), or a configuration's wiring. */
@@ -169,6 +170,7 @@ public final class RepositoryScan {
 		List<Method> methods = new ArrayList<>();
 		Map<Reading, Integer> byReading = new EnumMap<>(Reading.class);
 		Map<Category, Integer> byCategory = new EnumMap<>(Category.class);
+		Map<Category, Integer> byCombinedCategory = new EnumMap<>(Category.class);
 		int notSlimmable = 0;
 		for (FileResult<Read> r : results) {
 			if (!r.read() || r.result() == null) {
@@ -186,6 +188,7 @@ public final class RepositoryScan {
 				if (u.pricing() != null && u.pricing().notSlimmable()) {
 					notSlimmable++;
 					byCategory.merge(u.pricing().category(), 1, Integer::sum);
+					byCombinedCategory.merge(u.pricing().combinedCategory(), 1, Integer::sum);
 				}
 				methods.add(new Method(r.path(), m.type(), m.signature(), m.nameLine(), m.facts().length(), c,
 						u.pricing(), growth));
@@ -203,15 +206,20 @@ public final class RepositoryScan {
 		WiringMeasures measures = new WiringMeasures(wiringFiles.size(), lines, functions, edges,
 				history == null ? -1 : history.window().size(), history == null ? -1 : history.touching(wiringPaths));
 
-		int category3 = byCategory.getOrDefault(Category.FUNCTION_INJECTION, 0);
-		double share = notSlimmable == 0 ? 0 : (double) category3 / notSlimmable;
-		Bar bar = new Bar(notSlimmable, byCategory, share, share >= 0.25 && category3 >= 30);
+		Bar bar = bar(notSlimmable, byCategory);
+		Bar combinedBar = bar(notSlimmable, byCombinedCategory);
 
 		List<String> head = Growth.git(root, "rev-parse", "HEAD");
 		String commit = head == null || head.isEmpty() ? null : head.get(0).trim();
 		double seconds = (System.nanoTime() - started) / 1e9;
 		return new Result(root, commit, options, seconds, results.size(), unparsed, methods, wiringFiles, measures,
-				byReading, bar);
+				byReading, bar, combinedBar);
+	}
+
+	private static Bar bar(int notSlimmable, Map<Category, Integer> byCategory) {
+		int category3 = byCategory.getOrDefault(Category.FUNCTION_INJECTION, 0);
+		double share = notSlimmable == 0 ? 0 : (double) category3 / notSlimmable;
+		return new Bar(notSlimmable, byCategory, share, share >= 0.25 && category3 >= 30);
 	}
 
 	/** One file: Java parsed with the shape extractor and its long methods priced, or a configuration read. */

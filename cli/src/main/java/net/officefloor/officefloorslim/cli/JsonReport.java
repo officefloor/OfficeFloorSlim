@@ -36,6 +36,7 @@ final class JsonReport {
 		o.put("tool", "officefloorslim " + version);
 		o.put("facts_schema", MethodFacts.SCHEMA);
 		o.put("officefloor_reading", Pricing.OFFICEFLOOR_READING);
+		o.put("combined_reading", Pricing.COMBINED_READING);
 		o.put("repository", r.root().toString());
 		o.put("commit", r.commit());
 		o.put("seconds", Math.round(r.seconds() * 10) / 10.0);
@@ -54,15 +55,8 @@ final class JsonReport {
 		}
 		o.put("long_methods", r.methods().stream().filter(Method::longMethod).count());
 
-		ObjectNode bar = o.putObject("bar");
-		bar.put("not_slimmable", r.bar().notSlimmable());
-		ObjectNode cats = bar.putObject("by_category");
-		for (Category c : Category.values()) {
-			cats.put(String.valueOf(c.number()), r.bar().byCategory().getOrDefault(c, 0));
-		}
-		bar.put("category3_share", Math.round(r.bar().share() * 1000) / 1000.0);
-		bar.put("go", r.bar().go());
-		bar.put("rule", "category 3 at least a quarter of not_slimmable, and at least 30");
+		bar(o.putObject("bar"), r.bar());
+		bar(o.putObject("combined_bar"), r.combinedBar());
 
 		ObjectNode wiring = o.putObject("wiring");
 		var m = r.measures();
@@ -90,11 +84,9 @@ final class JsonReport {
 			Pricing p = x.pricing();
 			assessment(e.putObject("sinewslim"), p.conventional());
 			plan(e.putObject("officefloor"), p.officefloor());
-			if (p.category() == null) {
-				e.putNull("category");
-			} else {
-				e.putObject("category").put("number", p.category().number()).put("label", p.category().label());
-			}
+			combined(e.putObject("combined"), p.combined());
+			category(e, "category", p.category());
+			category(e, "combined_category", p.combinedCategory());
 			Migration mig = p.migration();
 			ObjectNode mo = e.putObject("migration");
 			mo.put("fields", mig.fields()).put("transactional", mig.transactional()).put("escalations", mig.escalations());
@@ -149,6 +141,64 @@ final class JsonReport {
 			ObjectNode fo = fns.addObject().put("kind", f.kind().name().toLowerCase()).put("lo", f.lo()).put("hi", f.hi())
 					.put("lines", f.lines());
 			f.declares().forEach(fo.putArray("declares")::add);
+		}
+	}
+
+	static void bar(ObjectNode bar, RepositoryScan.Bar b) {
+		bar.put("not_slimmable", b.notSlimmable());
+		ObjectNode cats = bar.putObject("by_category");
+		for (Category c : Category.values()) {
+			cats.put(String.valueOf(c.number()), b.byCategory().getOrDefault(c, 0));
+		}
+		bar.put("category3_share", Math.round(b.share() * 1000) / 1000.0);
+		bar.put("go", b.go());
+		bar.put("rule", "category 3 at least a quarter of not_slimmable, and at least 30");
+	}
+
+	static void category(ObjectNode e, String name, Category c) {
+		if (c == null) {
+			e.putNull(name);
+		} else {
+			e.putObject(name).put("number", c.number()).put("label", c.label());
+		}
+	}
+
+	/**
+	 * The combined split's plan: its functions, each with SinewSlim's pieces inside it, the two
+	 * totals and their sum; or why there is none.
+	 */
+	static void combined(ObjectNode o, OfficeFloorSplit.Plan p) {
+		o.put("feasible", p.feasible());
+		if (!p.feasible()) {
+			o.put("reason", p.reason().name().toLowerCase());
+			if (p.detail() == null) {
+				o.putNull("detail");
+			} else {
+				o.put("detail", p.detail());
+			}
+			o.putNull("sum");
+			return;
+		}
+		o.put("sum", p.sum()).put("injection_total", p.total()).put("extraction_total", p.extraction())
+				.put("worst_seam", p.worstSeam()).put("worst_piece", p.worstPiece()).put("edges", p.edges())
+				.put("pieces", p.pieces()).put("extraction_only", p.extractionOnly())
+				.put("tie_by_pieces", p.tieByPieces());
+		ArrayNode fns = o.putArray("functions");
+		for (OfficeFloorSplit.Function f : p.functions()) {
+			ObjectNode fo = fns.addObject().put("kind", f.kind().name().toLowerCase()).put("lo", f.lo()).put("hi", f.hi())
+					.put("lines", f.lines());
+			f.declares().forEach(fo.putArray("declares")::add);
+			ArrayNode pieces = fo.putArray("pieces");
+			SlimResult in = f.inner();
+			if (in != null) {
+				for (int i = 0; i < in.pieces(); i++) {
+					var s = in.cuts().get(i);
+					ObjectNode po = pieces.addObject().put("lo", s.lo()).put("hi", s.hi()).put("lines", in.pieceLines().get(i));
+					s.inputs().forEach(po.putArray("inputs")::add);
+					s.outputs().forEach(po.putArray("outputs")::add);
+				}
+				fo.put("remainder", in.remainder()).put("extraction", in.cost());
+			}
 		}
 	}
 
