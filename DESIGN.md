@@ -213,7 +213,7 @@ The split produces the functions as code **and** their wiring (the YAML, woof or
 configuration), applied as a refactoring in the IDE and checked by reading the facts again and
 comparing them with the plan.
 
-### The combined split (`officefloorslim-split/2`; proposed 1 November 2026, questions 8 to 11 open)
+### The combined split (`officefloorslim-split/2`; proposed 1 November 2026, question 11 decided, 8 to 10 open)
 
 `split/1` splits by function injection alone, which no OfficeFloor developer would do. An
 OfficeFloor function is an ordinary Java method: it can call private methods of its own. Wiring
@@ -240,24 +240,29 @@ what a developer would: functions where the flow divides, helper methods inside 
   function 48-90   41 lines   declares: query*, config     produces: -         seam 1
     piece  55-70   16 lines   in: query, config  out: rows                    seam 3
   2 functions, 1 edge, 1 piece   worst seam 3
-  injection cost (0+1) + (1+1) + 1 = 4      extraction cost 3 (SinewSlim's)
+  injection cost (0+1) + (1+1) + 1 = 4      extraction cost 3 (SinewSlim's)      total 7
   ```
 
-- **Two totals, never added.** The injection total (seams, functions, edges, as now) and the
+- **Two totals, and their sum.** The injection total (seams, functions, edges, as now) and the
   extraction total (SinewSlim's slim cost of every piece, by SinewSlim's `Params.cost`) are
-  reported side by side, as the two columns are (*Comparing the two costs*). The plan carries
-  both; nothing turns one into the other.
+  added to give the plan's total, which chooses between plans (question 11). They can be added
+  because they count the same things: values crossing a boundary, and 1 per part (a piece's
+  inputs and outputs and its 1; a function's carried values and its 1, and 1 per edge). This is
+  the one place the two costs are added. The plan reports both parts beside the sum, and the
+  scan's SinewSlim and OfficeFloor columns are still reported side by side, never as one
+  figure (*Comparing the two costs*).
 - **One function is always a candidate.** The whole method as a single function, slimmed by
-  SinewSlim inside it, is SinewSlim's own plan plus a function around it. So wherever
-  SinewSlim slims a method with one return per piece, the combined split has a plan, and its
-  worst seam is never larger than SinewSlim's. Two consequences, to be stated wherever its
-  figures are read:
+  SinewSlim inside it, is SinewSlim's own plan plus a function around it, at SinewSlim's cost
+  plus 1. So wherever SinewSlim slims a method with one return per piece, the combined split
+  has a plan, and its total is never more than SinewSlim's cost plus 1: injection is chosen
+  only where it lowers the sum by more than the function it adds. Two consequences, to be
+  stated wherever its figures are read:
   - **Injection is credited only where it is used:** a plan of two or more functions. A
     one-function plan is reported as `extraction_only`, and counts as SinewSlim's, not
     OfficeFloor's.
   - **"Never worse" is by construction, not a finding.** The comparison that means something
-    is how often injection is chosen and lowers the worst seam (*improves*), and for which
-    stuck methods it is the only plan (category 3).
+    is how often injection is chosen, by how much it lowers the total (*improves*), what it
+    does to the worst seam, and for which stuck methods it is the only plan (category 3).
 - **Reported beside `split/1`, not instead of it.** The scan's JSON keeps `split/1`'s plan and
   adds `split/2`'s, so a reader sees how much of the reach is injection's own and how much the
   helper methods inside functions. The categories (*Comparing the two costs*) are computed
@@ -286,13 +291,15 @@ what a developer would: functions where the flow divides, helper methods inside 
     blocked it. A body counts as slimmed only as SinewSlim's `slimmable` (one return per piece),
     not `slimmable_with_record`: the same line as the stuck definition, so a record cannot
     enter the OfficeFloor column by the back door.
-11. **The selection order across the two levels.** Suggested: **the smallest worst seam over
-    both kinds** (an injection seam and an extraction seam both count values crossing a
-    boundary, and are read as equal), **then the fewest parts** (functions plus pieces), **then
-    the smallest injection total, then the smallest extraction total.** Comparing worst seams
-    across kinds is the one place the two models meet, and it is needed to choose at all;
-    ordering the injection total before the extraction total prefers less wiring, which favours
-    the conventional shape on a tie, the reading least favourable to OfficeFloor.
+11. **The selection order across the two levels (decided 1 November 2026).** **The smallest
+    total wins**: the injection total plus SinewSlim's cost of every piece extracted inside the
+    functions. **On a tie, the fewer SinewSlim pieces; then the fewer OfficeFloor functions.**
+    This differs from `split/1` and SinewSlim, which choose by worst seam first (question 6):
+    the combined split chooses by what the whole plan costs, so a plan with one large seam can
+    win over one with several small ones. The tie-break prefers injection over extraction
+    (fewer pieces first), the opposite of the conservative order suggested; it is stated here
+    so that a reader weighs it, and every tie it settles is counted in the scan's output
+    (`ties_by_pieces`). The worst seam is still reported for every plan.
 
 ## Comparing the two costs
 
@@ -580,7 +587,7 @@ reusing the libraries in their own frameworks.
 ## Open questions
 
 - Where to publish the study's results.
-- The combined split's cost-model questions 8 to 11 (*The combined split*), before any
+- The combined split's cost-model questions 8 to 10 (*The combined split*), before any
   `split/2` figure is read; and whether `long-method-slim-study` registers on `split/2`, with
   its hypotheses restated for it (proposed: rescue, category 3 under `split/2` as a share of
   the stuck methods, read against the quarter; improvement, where both have a plan, how often
