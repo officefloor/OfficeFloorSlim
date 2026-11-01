@@ -32,11 +32,3 @@ jobs:
       - name: Build and test
         working-directory: OfficeFloorSlim
         run: ./gradlew --console=plain build :intellij:buildPlugin
-      - name: Study self-tests
-        working-directory: OfficeFloorSlim
-        run: |
-          python3 -m pip install --quiet pyyaml
-          python3 study/scan_driver_selftest.py
-          python3 study/lizard_compare_selftest.py
-          python3 study/normalise_selftest.py
-          python3 study/agent_limit_selftest.py

@@ -2,7 +2,9 @@
 
 The order of work for `DESIGN.md`. Tick each item as it lands. Phases 0 and 1 happen in
 `~/SinewSlim`, the rest here. Everything is built and integrated locally; only a merge to `main`
-publishes (Phase 7). Phases 4–6 go ahead only if Phase 3 passes the go/no-go bar below.
+publishes (Phase 7). The go/no-go bar below is a reading, not a gate (decided 1 November 2026):
+OfficeFloorSlim is a model of code, and is built and released whatever the study's Spring arms
+show.
 
 A copy of an earlier version of this plan, with the architecture drawn, is the doc
 <https://claude.ai/artifact/GrhB2UfvvfH2rQEpwMp23D>. This file is the one to keep current.
@@ -38,6 +40,16 @@ A copy of an earlier version of this plan, with the architecture drawn, is the d
 - The OfficeFloor split's limits (1 November 2026, before the study's runs are read): at most 5
   carried values per function, as SinewSlim's parameter limit; a lambda's body and a loop are
   never cut, as planned.
+- Studies are separate from the products (1 November 2026). Each experiment keeps its harness,
+  analysis and paper in its own repository and calls SinewSlim's and OfficeFloorSlim's command
+  lines for every cost; neither product holds study code. The SinewSlim analysis's tools moved
+  to `~/ui-long-degradation-test/harness/sinewslim/` (f1c09f8 there).
+- A second study, `~/long-method-slim-study` (public): a sample of open-source repositories,
+  their long methods priced by SinewSlim and by the OfficeFloor split, and whether the split
+  takes what extraction cannot. It runs on released versions of both products, so both are
+  completed and released first: SinewSlim merged and on Central, OfficeFloorSlim's CLI and
+  Docker image released with its JSON contract documented. The plugin work and the AI migration
+  carry on independently.
 
 ## Phase 0: Central publishing setup (in SinewSlim; built, uncommitted)
 
@@ -125,24 +137,21 @@ commits arrive on the stacks' `evolve/…` branches. See `DESIGN.md`, *Empirical
 - [x] Draft the analysis plan (H1–H4, measures, normalisation, the go/no-go bar): `~/ui-long-degradation-test/docs/SINEWSLIM_ANALYSIS_PLAN.md`
 - [x] Commit it (61fe7f1, branch `sinewslim-analysis-plan` in the experiment repository)
 - [ ] Amend it with the run IDs, the SinewSlim commit and `docs/sinewslim-analysis.yml`, **before** SinewSlim reads any branch of the current runs; and with the categories' operational definition (decided 1 November 2026), which section 7 leaves open
-- [x] A scan driver: for each `evolve/<run>/<condition>/chain<N>` branch, run SinewSlim at every checkpoint commit, backend Java only, and write one JSON per commit: `study/scan_driver.py`. A checkpoint is measured at its `cpNN agent` commit, as the analysis plan registers, once its `cpNN reset` commit shows it finished (it first scanned the reset commit; on the pilot the two give the same figures); only the backend root `stack.yaml` declares is extracted; W1-W3 beside it; OfficeFloorSlim's scan too with `--officefloorslim`, for the categories. It refuses any run not named with `--allow-run`, so no current run is read by accident. Self-tested in CI
+- [x] A scan driver: for each `evolve/<run>/<condition>/chain<N>` branch, run SinewSlim at every checkpoint commit, backend Java only, and write one JSON per commit: `harness/sinewslim/scan_driver.py` in the experiment. A checkpoint is measured at its `cpNN agent` commit, as the analysis plan registers, once its `cpNN reset` commit shows it finished (it first scanned the reset commit; on the pilot the two give the same figures); only the backend root `stack.yaml` declares is extracted; W1-W3 beside it; OfficeFloorSlim's scan too with `--officefloorslim`, for the categories. It refuses any run not named with `--allow-run`, so no current run is read by accident.
 - [x] Pilot the driver on an old run (for example `officehq-angular-spring`, `evolve/202610112340/just-solve/chain1`), not on the current runs (1 November 2026: all 250 checkpoints in 5 minutes, every file parsed; at cp250 803 backend methods, 51 long, M1 9, the same in both tools; categories 1/2/3/4 = 1/2/3/3; the `/__test__` seed method is one of the category 4)
-- [x] Check SinewSlim's code lines against Lizard's NLOC on the pilot, so the harness's series can be read beside the new one: `study/lizard_compare.py`, with Lizard 1.23.0 as the harness pins it (1 November 2026, the pilot chain, all 250 checkpoints). Where both report a method they agree: 99.1% of 108,057 lengths equal, Lizard never lower (by at most 5), 42 method-checkpoints long by Lizard only. But **Lizard 1.23.0 does not read Java records**: a record's own methods vanish, the methods after one go under its name, and in `InvoiceService.java` it lost the last ~500 lines. So 627 of SinewSlim's 6,698 long method-checkpoints (9%) are not in the harness's series at all, from cp57 on; at cp250, 5 of 51 long methods. The harness's class-shape measures take those wrong container names too
+- [x] Check SinewSlim's code lines against Lizard's NLOC on the pilot, so the harness's series can be read beside the new one: `harness/sinewslim/lizard_compare.py` in the experiment, with Lizard 1.23.0 as the harness pins it (1 November 2026, the pilot chain, all 250 checkpoints). Where both report a method they agree: 99.1% of 108,057 lengths equal, Lizard never lower (by at most 5), 42 method-checkpoints long by Lizard only. But **Lizard 1.23.0 does not read Java records**: a record's own methods vanish, the methods after one go under its name, and in `InvoiceService.java` it lost the last ~500 lines. So 627 of SinewSlim's 6,698 long method-checkpoints (9%) are not in the harness's series at all, from cp57 on; at cp250, 5 of 51 long methods. The harness's class-shape measures take those wrong container names too
 - [ ] Tell the experiment: its Lizard misses methods in and after records (above), and this machine's `~/ui-long-degradation-test/.venv` has lizard 1.24.1, not the pinned 1.23.0; check the runner's
 - [ ] Wiring counts for the OfficeFloor arms, per commit
-- [x] Normalise by passing tests, as the harness does, and report raw as well: `study/normalise.py`, the passing tests from the capture the harness commits on the chain branch (`evolve-results/capture/cpNN.json`), full-suite captures only (the harness's new design runs the full suite every tenth checkpoint and at the last; `tests.scope`); pooled sum over sum, raw beside; a checkpoint without a passing count is listed and left out. On the pilot chain: all 250 graded; at cp250 M1 9 over 391 passing (M1n 0.023), pooled M1n 0.032 and M2n 0.119. (The September runs could not be used: none of their branches is on this machine, and their records CSVs keep only pass flags, not the per-test results.)
+- [x] Normalise by passing tests, as the harness does, and report raw as well: `harness/sinewslim/normalise.py` in the experiment, the passing tests from the capture the harness commits on the chain branch (`evolve-results/capture/cpNN.json`), full-suite captures only (the harness's new design runs the full suite every tenth checkpoint and at the last; `tests.scope`); pooled sum over sum, raw beside; a checkpoint without a passing count is listed and left out. On the pilot chain: all 250 graded; at cp250 M1 9 over 391 passing (M1n 0.023), pooled M1n 0.032 and M2n 0.119. (The September runs could not be used: none of their branches is on this machine, and their records CSVs keep only pass flags, not the per-test results.)
 - [ ] Pin tool versions and `.sinew-slim.yml`; publish the raw JSON with every result
 - [ ] When the runs finish: scan, then test H1–H4 as written, with every method where OfficeFloor costs more listed
-- [x] Exploratory, labelled: agent failures against the length and the sinew of the methods each checkpoint touched: `study/agent_limit.py` (the first gate is the capture's when it ran on the `cpNN agent` commit; a touched not-slimmable method is flagged and banded, having no slim cost). On the pilot chain (1 November 2026): the agent's own spec passed at the first gate at all 250 checkpoints (a `just-solve` agent runs the end-to-end tests itself before it stops), so the planned outcome has nothing to explain there. Beyond the plan, labelled so, the whole gate as the outcome: 91 of 250 failed (regressions of earlier specs), about 36% in every slim-cost band and with no trend by length; the fit's effects are small and opposite (+0.21 per sd of length, −0.14 per sd of cost). Whether the planned outcome varies on the gated runs is for their scan
+- [x] Exploratory, labelled: agent failures against the length and the sinew of the methods each checkpoint touched: `harness/sinewslim/agent_limit.py` in the experiment (the first gate is the capture's when it ran on the `cpNN agent` commit; a touched not-slimmable method is flagged and banded, having no slim cost). On the pilot chain (1 November 2026): the agent's own spec passed at the first gate at all 250 checkpoints (a `just-solve` agent runs the end-to-end tests itself before it stops), so the planned outcome has nothing to explain there. Beyond the plan, labelled so, the whole gate as the outcome: 91 of 250 failed (regressions of earlier specs), about 36% in every slim-cost band and with no trend by length; the fit's effects are small and opposite (+0.21 per sd of length, −0.14 per sd of cost). Whether the planned outcome varies on the gated runs is for their scan
 - [ ] Decide where to publish the study
 - [ ] `assess` command in the CLI and Docker image for any open-source repository; worked examples on OfficeFloor and the MLCQ repositories (demonstrations, not part of the study)
 
 ## Phase 4: OfficeFloor split proposals
 
-**Paused (1 November 2026) until the go/no-go bar can be read.** The search, its cost model and
-its limits are built and decided; the plugin work and the removal of `Params.framework()` wait.
-To resume: the study's runs finish, the analysis plan's amendments are committed, the driver
-scans the Spring arms at cp250 with `--officefloorslim`, and the bar is read.
+Resumed (1 November 2026): the bar is a reading, not a gate.
 
 - [x] Settle cost model questions 1–3 (carried values per declaring function; function and edge 1 each; everything from outside the method free)
 - [x] Settle cost model questions 4–7 (decision functions, escalations, selection order, where the wiring counts) before any comparison, starting from the suggested defaults (1 November 2026; the defaults, with the join and the new-handler rule made explicit, and the wiring in the total as the worked example has it)
