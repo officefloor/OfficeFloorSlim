@@ -1,7 +1,6 @@
 package net.officefloor.officefloorslim.core;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,14 +13,13 @@ import net.officefloor.officefloorslim.core.MethodShape.Try;
 import net.officefloor.sinewslim.core.Assessment;
 import net.officefloor.sinewslim.core.Assessment.Status;
 import net.officefloor.sinewslim.core.Assessor;
+import net.officefloor.sinewslim.core.RunSlimmer;
 import net.officefloor.sinewslim.core.SlimResult;
-import net.officefloor.sinewslim.core.Slimmer;
 import net.officefloor.sinewslim.facts.MethodFacts;
 import net.officefloor.sinewslim.facts.MethodIndex;
 import net.officefloor.sinewslim.facts.Seam;
 import net.officefloor.sinewslim.facts.Stmt;
 import net.officefloor.sinewslim.facts.StmtKind;
-import net.officefloor.sinewslim.facts.Var;
 
 /**
  * The OfficeFloor split (DESIGN.md, The OfficeFloor split): a long method partitioned into
@@ -362,6 +360,9 @@ public final class OfficeFloorSplit {
 	private boolean piecesFirst = true;
 	/** SinewSlim's slimming of a run as a function body, by its lines; {@link #CANNOT} when it cannot. */
 	private final Map<Long, SlimResult> inner = new HashMap<>();
+
+	/** SinewSlim's assessor of the runs of each sequence, by the sequence's span. */
+	private final Map<Long, Assessor.Runs> runs = new HashMap<>();
 	private static final SlimResult CANNOT = new SlimResult(true, false, SlimResult.INFEASIBLE, SlimResult.INFEASIBLE, 0,
 			List.of(), List.of(), false, Assessor.DEFAULTS.params());
 	private final List<Try> tries;
@@ -458,7 +459,7 @@ public final class OfficeFloorSplit {
 						+ index.lines(at[0].start(), at[0].end()) + " lines)";
 		if (detail != null && version == Version.COMBINED) {
 			// what SinewSlim says of it as a function body of its own (question 10)
-			Assessment a = Assessor.DEFAULTS.assess(body(at[0].start(), at[0].end(), List.of(at[0])));
+			Assessment a = Assessor.DEFAULTS.assess(body(List.of(at[0])));
 			if (a.reason() != null) {
 				detail += "; as a function body, SinewSlim: " + a.reason();
 			}
@@ -524,7 +525,7 @@ public final class OfficeFloorSplit {
 					continue;
 				}
 				// a run of whole statements j..i-1, as one function
-				Part run = run(kids.subList(j, i), free);
+				Part run = run(kids, j, i, free);
 				if (run == null && version == Version.INJECTION
 						&& index.lines(kids.get(j).start(), kids.get(i - 1).end()) > p.target()) {
 					if (i - j > 1) {
@@ -565,7 +566,8 @@ public final class OfficeFloorSplit {
 	 * the combined split a run over the target fits when SinewSlim slims it as a function body, and
 	 * the whole method as one function is SinewSlim's own assessment of the method.
 	 */
-	private Part run(List<Stmt> run, Set<String> free) {
+	private Part run(List<Stmt> kids, int j, int i, Set<String> free) {
+		List<Stmt> run = kids.subList(j, i);
 		Stmt first = run.get(0), last = run.get(run.size() - 1);
 		int lines = index.lines(first.start(), last.end());
 		if (!jumpsStay(run)) {
@@ -580,7 +582,7 @@ public final class OfficeFloorSplit {
 			}
 			slimmed = a.proposal();
 		} else if (lines > p.target()) {
-			if (version == Version.INJECTION || (slimmed = inner(run)) == null) {
+			if (version == Version.INJECTION || (slimmed = inner(kids, j, i)) == null) {
 				return null;
 			}
 		}
@@ -615,48 +617,39 @@ public final class OfficeFloorSplit {
 	 * return per piece.
 	 */
 	private SlimResult inner(List<Stmt> run) {
+		return inner(run, 0, run.size());
+	}
+
+	/**
+	 * The same, for the run {@code kids[j..i-1]}. Every run of a sequence is asked of, so they are
+	 * assessed together ({@link Assessor#runs}): one walk of SinewSlim's search per first
+	 * statement, not one search per run, with the same results.
+	 */
+	private SlimResult inner(List<Stmt> kids, int j, int i) {
+		List<Stmt> run = kids.subList(j, i);
 		int lo = run.get(0).start(), hi = run.get(run.size() - 1).end();
 		SlimResult r = inner.computeIfAbsent(((long) lo << 32) | (hi & 0xffffffffL), k -> {
-			MethodFacts body = body(lo, hi, run);
-			if (!Slimmer.slim(body, Assessor.DEFAULTS.params()).feasible()) {
+			MethodFacts body = body(run);
+			long seq = ((long) kids.get(0).start() << 32) | (kids.get(kids.size() - 1).end() & 0xffffffffL);
+			Assessor.Runs together = runs.computeIfAbsent(seq, x -> Assessor.DEFAULTS.runs(facts, kids));
+			if (!together.slim(j, i, body).feasible()) {
 				return CANNOT; // the rest of the assessment is needed only for the proposal
 			}
-			Assessment a = Assessor.DEFAULTS.assess(body);
+			Assessment a = together.assess(j, i, body);
 			return slimmed(a.status()) ? a.proposal() : CANNOT;
 		});
 		return r == CANNOT ? null : r;
 	}
 
 	/**
-	 * A run of statements as a method of its own: its statements the body, its length their code
-	 * lines. The method's variables are kept as they are, so what the run uses from before it is a
-	 * parameter, priced as SinewSlim prices any (question 9), and what is read after it is a
-	 * result; a field, and a call to the class's own methods, count only inside the run.
+	 * A run of statements as a method of its own (SinewSlim's {@link RunSlimmer#runFacts}): its
+	 * statements the body, its length their code lines. The method's variables are kept as they
+	 * are, so what the run uses from before it is a parameter, priced as SinewSlim prices any
+	 * (question 9), and what is read after it is a result; a field, and a call to the class's own
+	 * methods, count only inside the run.
 	 */
-	private MethodFacts body(int lo, int hi, List<Stmt> run) {
-		List<Var> vars = new ArrayList<>();
-		for (Var v : facts.vars()) {
-			if (v.kind() != Var.Kind.FIELD) {
-				vars.add(v);
-				continue;
-			}
-			int[] refs = within(v.refs(), lo, hi), defs = within(v.defs(), lo, hi), muts = within(v.muts(), lo, hi);
-			if (refs.length + defs.length + muts.length > 0) {
-				vars.add(new Var(v.name(), v.kind(), v.first(), v.literal(), refs, defs, muts));
-			}
-		}
-		List<int[]> loops = new ArrayList<>();
-		for (int[] l : facts.loops()) {
-			if (lo <= l[0] && l[1] <= hi) {
-				loops.add(l);
-			}
-		}
-		return new MethodFacts(lo, new Stmt(lo, hi, true, StmtKind.BLOCK, run), vars, loops,
-				within(facts.ownCallLines(), lo, hi), index.lines(lo, hi));
-	}
-
-	private static int[] within(int[] lines, int lo, int hi) {
-		return Arrays.stream(lines).filter(x -> lo <= x && x <= hi).toArray();
+	private MethodFacts body(List<Stmt> run) {
+		return RunSlimmer.runFacts(facts, index, run);
 	}
 
 	/** Whether control never reaches the statement after it. */

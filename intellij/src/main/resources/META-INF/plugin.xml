@@ -26,6 +26,13 @@
 
     <change-notes><![CDATA[
         <ul>
+          <li><b>0.5.0</b>: A long function's split drawn on the graph itself. Click its badge and
+          the function is replaced by the functions it would split into, dashed amber, joined by
+          their flows, and the graph is laid out again; click again to put it back. A link that
+          skips a layer is routed round the side, not behind the node between. Clicking a function
+          no longer looks its Java method up on the UI thread, which IntelliJ reported as a slow
+          operation. Long flat methods, such as GUI builders generate, are priced in seconds
+          rather than hours, with the same results.</li>
           <li><b>0.4.0</b>: Long functions marked on the flow diagram. A function whose method is
           26 code lines or more has an amber outline and its length as a badge. Hover it, or click
           the badge to keep it open, to preview how it splits: into functions where the flow

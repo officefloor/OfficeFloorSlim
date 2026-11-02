@@ -301,6 +301,19 @@ existed, as 1 to 7 were before any `split/1` figure was compared):
     so that a reader weighs it, and every tie it settles is counted in the scan's output
     (`ties_by_pieces`). The worst seam is still reported for every plan.
 
+**How the bodies are searched (since 0.5.0; the plans unchanged).** Every run of sibling
+statements over the target is a candidate function body for SinewSlim to slim, about n²/2 runs
+of a sequence of n statements. 0.3.0 slimmed each from scratch, which took hours on the flat
+methods GUI builders generate (a NetBeans `initComponents()` of 575 statements: about 160,000
+searches). From 0.5.0 each sequence's runs are assessed together, by SinewSlim's
+`Assessor.runs` (SinewSlim 0.2.1): one walk of its search per first statement serves every run
+starting there, since the states after a run's statements do not depend on what follows. That
+method now takes 75 seconds. The plans are the same: SinewSlim's `RunSlimmerTest` checks
+every run of its parity subset against slimming from scratch, and the scans of 0.3.0 and 0.5.0
+were compared field for field (all but the `links` 0.5.0 adds): on OfficeFloor's repository (446
+long methods), and on two of the generated methods, of 255 and 385 statements, which 0.3.0 took 7
+and 36 minutes over (0.5.0: 10 and 27 seconds).
+
 ## Comparing the two costs
 
 The two costs count different things: SinewSlim counts parameters and returns; OfficeFloor

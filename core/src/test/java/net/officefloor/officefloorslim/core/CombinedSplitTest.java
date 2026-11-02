@@ -5,8 +5,10 @@ import static net.officefloor.officefloorslim.core.OfficeFloorSplitTest.method;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -203,5 +205,19 @@ class CombinedSplitTest {
 				assertTrue(p.sum() <= conventional.proposal().cost() + 1, body);
 			}
 		}
+	}
+
+	/**
+	 * A long flat method, as a GUI builder generates them: every run of its statements over the
+	 * target is a function SinewSlim may slim, about n²/2 of them. Slimmed one by one from scratch
+	 * that took minutes here, and hours on generated methods of several hundred statements; with
+	 * one walk of the search per first statement (SinewSlim's Assessor.runs) it takes seconds, and
+	 * the plan is the same (SinewSlim's RunSlimmerTest, and the scans compared before 0.5.0).
+	 */
+	@Test
+	void aLongFlatMethodIsPlannedInSeconds() {
+		String body = lines("System.out.println(\"#\");", 150);
+		Plan plan = assertTimeoutPreemptively(Duration.ofSeconds(30), () -> combined(body));
+		assertTrue(plan.feasible());
 	}
 }
