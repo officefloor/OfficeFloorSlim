@@ -26,10 +26,14 @@
 
     <change-notes><![CDATA[
         <ul>
+          <li><b>0.5.2</b>: fixes 0.5.1, which could price a method differently from 0.5.0 when
+          several statements share a line inside a loop or if (SinewSlim 0.2.3). Generated tables
+          are still priced in minutes; the shortcut that took a flat method whole is removed, as
+          the faster search makes it unneeded.</li>
           <li><b>0.5.1</b>: Generated tables of thousands of statements (an encoding detector's
-          frequencies, a parser's keyword map) are priced in minutes rather than hours, with the
-          same results: a flat method that fits one function is taken whole when nothing else can
-          cost as little, and the search stops early on runs too long to slim.</li>
+          frequencies, a parser's keyword map) are priced in minutes rather than hours. It could
+          price a method differently when several statements share a line inside a loop or if:
+          fixed in 0.5.2.</li>
           <li><b>0.5.0</b>: A long function's split drawn on the graph itself. Click its badge and
           the function is replaced by the functions it would split into, dashed amber, joined by
           their flows, and the graph is laid out again; click again to put it back. A link that

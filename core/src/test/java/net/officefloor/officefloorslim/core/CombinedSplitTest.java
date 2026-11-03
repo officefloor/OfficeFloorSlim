@@ -220,4 +220,19 @@ class CombinedSplitTest {
 		Plan plan = assertTimeoutPreemptively(Duration.ofSeconds(30), () -> combined(body));
 		assertTrue(plan.feasible());
 	}
+
+	/**
+	 * A generated table of a thousand statements, too long for one function (a flat run holds about
+	 * 25 × 25 lines): SinewSlim's walks end once no run from their start can reach the target, and
+	 * the runs past that are not built (0.5.0 took over two minutes at 800 statements, and hours at
+	 * a few thousand). The plan is the same as before: the walks are checked against slimming each
+	 * run from scratch in SinewSlim's tests.
+	 */
+	@Test
+	void aGeneratedTableIsPlannedInMinutes() {
+		String body = "\t\tint[] t = new int[9000];\n" + lines("t[#] = #;", 1000) + "\t\treturn a;\n";
+		Plan plan = assertTimeoutPreemptively(Duration.ofSeconds(180), () -> combined(body));
+		assertTrue(plan.feasible());
+		assertTrue(plan.functions().size() >= 2, plan.functions().size() + " functions");
+	}
 }

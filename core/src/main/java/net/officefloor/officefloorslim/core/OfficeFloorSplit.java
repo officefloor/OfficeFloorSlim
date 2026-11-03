@@ -432,15 +432,6 @@ public final class OfficeFloorSplit {
 	 */
 	private Plan combinedPlan() {
 		piecesFirst = true;
-		Part whole = SHORTCUT ? provablyBest() : null;
-		if (whole != null) {
-			SHORTCUTS.incrementAndGet();
-			if (TRACE) {
-				System.err.println("officefloorslim: whole method best by bound at line " + facts.declLine());
-			}
-			return new Plan(true, true, null, null, whole.fns, whole.edges, whole.worst, whole.cost, whole.pieces,
-					whole.extraction, false, whole.links, whole.outs, whole.returns);
-		}
 		Part best = solve(p.maxCarried());
 		if (best == null) {
 			return why();
@@ -452,78 +443,6 @@ public final class OfficeFloorSplit {
 				&& (alt.pieces != best.pieces || alt.functions != best.functions);
 		return new Plan(true, true, null, null, best.fns, best.edges, best.worst, best.cost, best.pieces, best.extraction,
 				tie, best.links, best.outs, best.returns);
-	}
-
-	/** Off only to compare the shortcut with the full search (tests). */
-	static volatile boolean SHORTCUT = true;
-
-	/** The plans the shortcut has decided (tests). */
-	static final java.util.concurrent.atomic.AtomicInteger SHORTCUTS = new java.util.concurrent.atomic.AtomicInteger();
-
-	/** Each time the shortcut decides a plan, a line on standard error: to count them. */
-	private static final boolean TRACE = Boolean.getBoolean("officefloorslim.trace.shortcut");
-
-	/**
-	 * The whole method as one function, when no other plan can match its total: the plan the full
-	 * search would choose, without the search. The search asks SinewSlim of every run of a sequence
-	 * (about n²/2 of them), which takes hours on the longest flat methods (a generated table of
-	 * thousands of statements); this asks it of the method once.
-	 *
-	 * <p>
-	 * It applies to a flat method: no top-level statement can be expanded into functions (no if,
-	 * switch, try or block), and none but the last ends the flow. Every plan of such a method is
-	 * then {@code k} runs of its statements, one after another, and costs at least:
-	 * <ul>
-	 * <li>1 per function, and 1 per flow from one to the next: {@code 2k - 1};</li>
-	 * <li>for a function of {@code l} code lines, the SinewSlim pieces that bring it to the target
-	 * {@code t}: each piece, and what is left, ends at {@code t} lines or fewer, and each piece
-	 * leaves a call line behind, so {@code l + pieces <= t * (pieces + 1)}: at least
-	 * {@code ceil((l - t) / (t - 1))} pieces, each costing at least SinewSlim's piece cost.</li>
-	 * </ul>
-	 * Summed over the functions (a ceiling of a sum is at most the sum of the ceilings), a plan of
-	 * {@code k} functions costs at least {@code 2k - 1 + c * ceil((L - k t) / (t - 1))}, where
-	 * {@code L} is the statements' code lines. If the whole method as one function costs less than
-	 * that for every {@code k >= 2}, it is the only plan with the smallest total, so the tie order
-	 * (question 11) has nothing to settle.
-	 *
-	 * @return the whole method's part, or null to search
-	 */
-	private Part provablyBest() {
-		List<Stmt> kids = facts.body().kids();
-		int n = kids.size();
-		int t = Assessor.DEFAULTS.params().target(), c = Assessor.DEFAULTS.params().pieceCost();
-		if (n < 2 || t < 2 || p.target() > t || c < 0) {
-			return null;
-		}
-		int lines = 0;
-		for (int i = 0; i < n; i++) {
-			Stmt s = kids.get(i);
-			switch (s.kind()) {
-			case IF, SWITCH, TRY, BLOCK -> {
-				return null;
-			}
-			default -> {
-			}
-			}
-			if (i < n - 1 && ends(s)) {
-				return null;
-			}
-			lines += index.lines(s.start(), s.end());
-		}
-		limit = p.maxCarried();
-		Part whole = run(kids, 0, n, Set.of());
-		if (whole == null) {
-			return null;
-		}
-		int sum = whole.cost + whole.extraction;
-		for (int k = 2; k <= n; k++) {
-			int over = lines - k * t;
-			int pieces = over <= 0 ? 0 : (over + t - 2) / (t - 1);
-			if (2 * k - 1 + c * pieces <= sum) {
-				return null; // another plan might match it: search
-			}
-		}
-		return whole;
 	}
 
 	/** Why there is no plan: carried values when lifting the limit finds one, else the blocking statement. */
@@ -968,23 +887,21 @@ public final class OfficeFloorSplit {
 		return shape != null && shape.hasDefault();
 	}
 
-	/** By a sequence's span: how many of its statements before each index a jump leaves. */
-	private final Map<Long, int[]> leavingBefore = new HashMap<>();
+	/** By the sequence (the list itself): how many of its statements before each index a jump leaves. */
+	private final Map<List<Stmt>, int[]> leavingBefore = new java.util.IdentityHashMap<>();
 
 	/**
 	 * {@link #jumpsStay(List)} of {@code kids[j..i-1]}, from a count of the statements a jump
 	 * leaves, kept per sequence: each statement is asked of once, not once per run.
 	 */
 	private boolean jumpsStay(List<Stmt> kids, int j, int i) {
-		long seq = ((long) kids.get(0).start() << 32) | (kids.get(kids.size() - 1).end() & 0xffffffffL);
-		int[] before = leavingBefore.get(seq);
-		if (before == null || before.length != kids.size() + 1) {
-			before = new int[kids.size() + 1];
-			for (int k = 0; k < kids.size(); k++) {
-				before[k + 1] = before[k] + (leaves(kids.get(k), false, false) ? 1 : 0);
+		int[] before = leavingBefore.computeIfAbsent(kids, k -> {
+			int[] b = new int[k.size() + 1];
+			for (int x = 0; x < k.size(); x++) {
+				b[x + 1] = b[x] + (leaves(k.get(x), false, false) ? 1 : 0);
 			}
-			leavingBefore.put(seq, before);
-		}
+			return b;
+		});
 		return before[i] == before[j];
 	}
 

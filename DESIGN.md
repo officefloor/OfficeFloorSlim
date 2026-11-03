@@ -314,28 +314,21 @@ were compared field for field (all but the `links` 0.5.0 adds): on OfficeFloor's
 long methods), and on two of the generated methods, of 255 and 385 statements, which 0.3.0 took 7
 and 36 minutes over (0.5.0: 10 and 27 seconds).
 
-**Generated tables (since 0.5.1; the plans unchanged).** Some generated methods are tables of
+**Generated tables (since 0.5.2; the plans unchanged).** Some generated methods are tables of
 thousands of one-line statements (an encoding detector's frequencies, a parser's keyword map),
 and 0.5.0 still took hours over them: every walk ran to the sequence's end, and every one of the
-n²/2 runs had its facts built to be asked of. Three exact changes, none of which can change a
-plan:
+n²/2 runs had its facts built to be asked of. Two changes, from SinewSlim 0.2.3:
 
-- **Walks that end** (SinewSlim 0.2.2): a run can hold only so many pieces, since each leaves
-  its call in what is left, which must fit the target too; a flat run of more than about 25 × 25
-  lines cannot be slimmed. A walk keeps only the states that could still bring some run to the
-  target and stops when none is left, and a run past it is known not to slim without its facts
-  being built (`Assessor.Runs.cannot`). Each statement's jumps are counted once per sequence,
-  not once per run.
-- **The whole method, when nothing else can match it** (`provablyBest`): in a flat method (no
-  top-level if, switch, try or block; only the last statement ends the flow), every plan is k runs
-  one after another, and costs at least `2k - 1` (a function each, a flow between) plus a piece
-  for every 24 lines over 25 in each function. When the whole method as one function costs less
-  than that bound for every k ≥ 2, it is the only plan with the smallest total, so it is the
-  plan, and the search is not run.
-- Neither changes what is reported: `ShortcutTest` compares the shortcut's plan with the search's
-  on 400 random flat and nearly flat methods, SinewSlim's `RunSlimmerTest` checks every run it
-  answers "cannot" for against slimming from scratch, and the scans of 0.5.0 and 0.5.1 were
-  compared field for field on the study's repositories already scanned.
+- **Walks that end**: a walk keeps only the states that could still bring some run to the target
+  and stops when none is left (a flat run of more than about 25 × 25 lines cannot be slimmed,
+  since each piece leaves its call in what is left, which must fit too).
+- **Runs known not to slim without their facts** (`Assessor.Runs.cannot`): most runs of a long
+  sequence are past the end of their walk, and are answered from it.
+
+Each statement's jumps are also counted once per sequence, not once per run. SinewSlim's tests
+check every run against slimming from scratch, including methods whose statements share lines
+(where 0.2.2's walks, in OfficeFloorSlim 0.5.1, differed), and the scans were compared field for
+field with 0.5.0's on the study's sample.
 
 ## Comparing the two costs
 
