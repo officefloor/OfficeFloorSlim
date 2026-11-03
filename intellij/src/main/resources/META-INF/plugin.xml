@@ -26,6 +26,7 @@
 
     <change-notes><![CDATA[
         <ul>
+          <li><b>0.5.3</b>: The plugin has the OfficeFloor logo as its icon.</li>
           <li><b>0.5.2</b>: fixes 0.5.1, which could price a method differently from 0.5.0 when
           several statements share a line inside a loop or if (SinewSlim 0.2.3). Generated tables
           are still priced in minutes; the shortcut that took a flat method whole is removed, as
