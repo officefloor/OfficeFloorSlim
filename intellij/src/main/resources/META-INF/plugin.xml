@@ -26,6 +26,12 @@
 
     <change-notes><![CDATA[
         <ul>
+          <li><b>0.5.4</b>: on SinewSlim 0.2.4, where a value carried round a loop is an input of a
+          piece inside it. A local declared before a loop with a literal (<code>int count = 0</code>)
+          and written in it no longer moves into a piece or function inside the loop: it is passed
+          in or declared. SinewSlim's assessment, the injection split and the combined split all
+          read it, so some plans and their costs change, both ways, and a few methods change
+          status.</li>
           <li><b>0.5.3</b>: The plugin has the OfficeFloor logo as its icon.</li>
           <li><b>0.5.2</b>: fixes 0.5.1, which could price a method differently from 0.5.0 when
           several statements share a line inside a loop or if (SinewSlim 0.2.3). Generated tables
